@@ -1,0 +1,71 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Thu May 23 15:20 2019
+
+Bnque de fonctions utilisés dans d'autres codes
+"""
+import numpy as np
+from matplotlib import pyplot as plt
+
+def getColumns(inFile, delim=",", header=True):
+    """
+    Get columns of data from inFile. The order of the rows is respected
+    :param inFile: column file separated by delim
+    :param header: if True the first line will be considered a header line
+    :returns: a tuple of 2 dicts (cols, indexToName). cols dict has keys that 
+    are headings in the inFile, and values are a list of all the entries in that
+    column. indexToName dict maps column index to names that are used as keys in 
+    the cols dict. The names are the same as the headings used in inFile. If
+    header is False, then column indices (starting from 0) are used for the 
+    heading names (i.e. the keys in the cols dict)
+    """
+    cols = {} 
+    indexToName = {}
+    for lineNum, line in enumerate(inFile):
+        #notete = input('Combien de ligne fait len-tête :')
+        notete = 0
+        if lineNum == notete:
+            headings = line.split(delim)
+            i = 0
+            for heading in headings:
+                heading = heading.strip()
+                if header:
+                    cols[heading] = []
+                    indexToName[i] = heading
+                else:
+                    # in this case the heading is actually just a cell
+                    cols[i] = [heading]
+                    indexToName[i] = i
+                i += 1
+        else:
+            cells = line.split(delim)
+            i = 0
+            for cell in cells:
+                cell = cell.strip()
+                cols[indexToName[i]] += [cell]
+                i += 1              
+    return cols, indexToName
+
+#Difference entre des courbe de delta S---------------------------------------
+def Difference_2courbes_Entropy(i, x, y):
+    nom_doc= x[0] + y[0]
+    nom_doc2 = x[1] + y[1]
+    print(nom_doc + '_champ_' + '1' + '.txt')    
+    file = open(nom_doc + '_champ_' + str(i) + '.txt', 'r')
+    var =np.loadtxt(nom_doc + '_champ_' + str(i) + '.txt',delimiter="         ", skiprows= 1)
+    file.close()
+    file2 = open(nom_doc + '_champ_' + str(i) + '.txt', 'r')
+    var2 =np.loadtxt(nom_doc2 + '_champ_' + str(i) + '.txt',delimiter="         ", skiprows= 1)
+    file2.close()
+    plt.figure()
+    plt.plot(var[:,1], var[:,0], linewidth = 1, label = y[0])
+    plt.plot(var2[:,1], var2[:,0], linewidth = 1,  label = y[1])
+    plt.plot(var2[:,1], var[0:24,0] - var2[:,0], linewidth = 1 , label = 'Difference')   
+    plt.xlabel(r'Température (K)') # axe x température
+    plt.ylabel(r'$-\Delta$ S (J/kg K)') #axe y delta s
+    plt.title(r'Variation de $\Delta$ S en fonction de la température (K) ('+str(i)+'T)')
+    plt.legend( loc='best',  frameon = False) 
+    plt.show()
+    
+#----------------------
+    
