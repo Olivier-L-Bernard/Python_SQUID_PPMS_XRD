@@ -1,0 +1,97 @@
+# -*- coding: utf-8 -*-
+"""
+Auteur: Olivier Bernard
+Créée mercredi le 8 mai 2019  à (10:30) 
+Entrer: Clavier
+Sortie: Moniteur
+
+Code permettant de lire, classer et déposer dans des liste des éléments de fi-
+chier .txt
+"""
+import numpy as np
+from matplotlib import pyplot as plt
+
+#----------------------------------------------------------------------------
+from _Fonctions_v1 import getColumns
+
+#intégration:-----------------------------------------------------------------
+def inte(x1,x2,x3,x4):
+    d1 = np.trapz(x1, x2, 0.01)
+    d2 = np.trapz(x3, x4, 0.01)
+    return d1-d2
+
+#Calculs du delta s et ecriture des fichier txt-------------------------------
+def trace_deltaSvsT(masse, angle, titre, i ,nbval, chx, cryst): 
+    titre_doc={0:'HoMn2O5_Crystal_MCE_axe3', 1:'HoMn2O5_MCE_Crystal_axe1_2', 2: str(titre)+str(angle)}
+    titre_axe= {0:'(Easy)' , 1:'(Hard)', 2:'('+str(angle)+'deg)'}
+    print('L.angle selectionne est:', titre_axe[2])
+
+    j = 2
+    Axe = titre_axe[float(j)] #Important de le spécifier aussi
+    Nom = titre_doc[float(j)] #Très important de spécifier. 
+
+    nom_doc= Nom +'.txt'
+    file = open(nom_doc, 'r')
+    cols, indexToName = getColumns(file)
+    file.close()
+    print('Le fichier', Nom,' a:', len(cols['Time']),'mesures') 
+
+    Tsaut = 3
+    Tk = list(np.float_(cols['Temperature (K)']))
+    LM = list(np.float_(cols['Long Moment (emu)'])/masse) #Division par masse pour avoir M
+    FOe = list(np.float_(cols['Field (Oe)'])/10000) #Division par 10k pour avoir H en Tesla
+    tmax = max(Tk[:])
+    print('L.axe', Axe , 'a une température maximale de' , tmax , 'K')
+    while i < nbval:
+        ds = []
+        champ = []
+        moytr = []
+        tt = []
+        Tmoy=[]
+        saute = []
+        pstL = []
+        Tb = 2
+        n=0
+        pstlist = 0
+        fd=open(Nom + '_ds' + '_champ_' + str(i) + '.txt', "w")
+        fd.write(str('delta s') + "         " + str('Temperature (K)') + "         " +str('Champ (H)')+ "         "+ 'Temp (pas round)' + "\n")
+        while Tb < (tmax - Tsaut):
+            saut = 0
+            saut2 = 0
+            while FOe[pstlist + saut] < 7:
+                saut += 1
+            ind = FOe[pstlist : pstlist + saut +1].index(i)
+            while FOe[pstlist + saut + saut2 + 1 ] < 7:
+                saut2 += 1
+            ind2 = FOe[pstlist + saut + 1 : pstlist + saut + saut2 +2].index(i)
+            T1 = sum(Tk[pstlist:pstlist + saut ])/len(Tk[pstlist:pstlist+saut])
+            T2 = sum(Tk[pstlist + saut + 1 :pstlist + saut + saut2])/len(Tk[pstlist + saut+1:pstlist + saut + saut2])
+            tmoy = (T1 + T2)/2
+            dT = T2 - T1
+            dif = inte(LM[pstlist : pstlist + ind ], FOe[pstlist : pstlist  + ind ], LM[pstlist + saut + 1: pstlist + saut + 1 + ind2], FOe[pstlist + saut + 1: pstlist + saut + 1 + ind2])
+            dds = dif/dT
+            c= float(i)
+            ds.append(dds)
+            moytr.append(round(tmoy,1))
+            Tmoy.append(tmoy)
+            champ.append(c)
+            saute.append(saut)
+            tt.append(round(Tb,1))
+            pstL.append(pstlist)
+            fd.write(str(ds[n]) + "         " + str(moytr[n])+ "         " + str(champ[n]) +  "         " + str(Tmoy[n])+ "\n")
+            n+=1
+            pstlist += saut+1
+            Tb += dT
+        fd.close()
+        if chx == 's':
+            plt.plot(moytr, ds, marker = 's', markersize = 2, linewidth = 1, label = str(i) +'T') 
+            plt.title(r'Variation de $\Delta$ S en fonction de la température (K) du'+cryst+' ('+ str(angle)+'deg)')
+        if chx == 'p':
+            plt.plot(moytr, ds, marker = 's', markersize = 2, linewidth = 1, label = str(i)+'T ,'+str(angle)+'deg' )
+            plt.title(r'Variation de $\Delta$ S en fonction de la température (K) du'+ cryst +','+ str(i)+ 'T')
+        print('Pour le champ de', i,'T, il y a' , n , 'valeur de Delta S')
+        i+= 1
+    plt.xlabel(r'Température (K)') # axe x température
+    plt.ylabel(r'$-\Delta$ S (J/kg K)') #axe y delta s
+    plt.legend( loc='best',  frameon = False)
+    plt.show()      
