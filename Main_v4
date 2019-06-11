@@ -1,0 +1,122 @@
+# -*- coding: utf-8 -*-
+"""
+Auteur: Olivier Bernard
+Creer 24 mai 2019 a 9:22
+Entrer: Clavier
+Sortie: Moniteur
+
+Code central permettant l'appel de code qui font les calculs et autres commandes
+"""
+import sys
+import numpy as np
+import os.path
+
+#mass = input('Quel est la masse de l.echantillon (en mg)?:')
+
+crysta = {0:'TbMn2O5', 1:'HoMn2O5'}
+#cryst = input('Quel est le crystal etudie?:')
+
+prefix = {0:'_crystal_', 1: '_Crystal_MCE_'}
+#print('Liste des prefixes:', prefix)
+
+mass = [27.7, 8.32]
+#print('Liste des masses:', mass)
+
+pf = 0
+#pf = input('Quel est le prefix de votre document(selectionner le no correspondand a la liste)?:')
+
+cryst = crysta[float(pf)]
+mm = mass[pf]
+masse = float(mm)*(10**-3)
+print('La masse est de', masse ,'g')
+
+name = str(cryst) + str(prefix[float(pf)]) + 'axe'
+
+commande = input('Que voulez-vous faire ( amh= MvsH pour différents T; ama = MvsAng pour un T et H fixe; s = delta s; dsa = dS vs Angle; delS = la derive de delta S ; r= rien )?:')
+
+if (commande == 'amh'):  #Code pour faire des calculs de M vs le champ. Besoin de fichiers de base (hard(1111) et easy(3333) axis)
+       from _Called_Ang_MvsH_v3 import traceAng_MvsH
+       nickname = str(cryst) + str(prefix[float(pf)])
+       titre = {0:'pres',1:'loin'}
+       tite = []
+       i = 0
+       print('Je vous suggère de prendre les axes easy et hard, ou des axes qui sont perpendiculaires')
+       while i<2:
+           x = input('Quel est l.angle le plus '+titre[i]+' de l.axe easy?:')
+           tite.append(x)
+           i +=1
+       chx = input('Voulez-vous etudiez un seul angle (s) ou plusieurs (p) ?:')
+       if chx == 's':
+            axe = int(input('Quel est l.angle de rotation?:'))
+            traceAng_MvsH(masse, axe, name+ str(tite[0]), name+str(tite[1]), nickname, cryst)
+       if chx == 'p':
+            from _Called_Ang_MvsH_v3 import traceAng_MvsHp
+            anmin = int(input('L.angle minimale que vous voulez etudier:'))
+            anmax = int(input('L.angle maximale que vous voulez etudiez:'))
+            nb = int(input('Quel est le pas entre deux angles?:'))
+            traceAng_MvsHp(masse,  name+ str(tite[0]), name+str(tite[1]), nickname, cryst, anmin, anmax, nb)
+                
+if (commande == 'ama'): #Code pour faire des calculs de M vs l'angle. Besoin de fichiers de base (hard(1111) et easy(3333) axis)
+       titre = {0:'pres',1:'loin'}
+       tite = []
+       i = 0
+       print('Je vous suggère de prendre les axes easy et hard, ou des axes qui sont perpendiculaires')
+       chx = input('Voulez-vous etudiez un seul champ (s) ou plusieurs (p) ?:')
+       while i<2:
+           x = input('Quel est l.angle le plus '+titre[i]+' de l.axe easy?:')
+           tite.append(x)
+           i +=1     
+       if chx == 's':
+            from _Called_Ang_MvsAng_v3 import traceAng_MvsAngs
+            Hch = float(input('Quel est le champ a etudier?:'))
+            Tch = int(input('Quel est la temperature a etudiez?:'))
+            traceAng_MvsAngs(masse, Hch, Tch,   name+tite[0], name+tite[1], cryst)
+       if chx == 'p':
+            chmin = int(input('Champ minimale que vous voulez etudier:'))
+            chmax = int(input('Champ maximale que vous voulez etudiez:'))
+            nb = int(input('Quel est le pas entre deux champs?:'))
+            from _Called_Ang_MvsAng_v3 import traceAng_MvsAngp
+            for hch in range(chmin, chmax+1, nb):
+                traceAng_MvsAngp(masse, hch,  name+tite[0], name+tite[1], cryst)
+       
+if (commande == 's' ) : #Code pour calculer dS vs T. Beosin des documents avec les angles pour faire les calculs (au moins 2)
+        from _Called_Trace_deltaSvsT_v3 import trace_deltaSvsT
+        chx = input('Voulez-vous etudiez un seul angle (s) ou plusieurs (p) ?:')
+        nbch = int(input('Combien de champ mag voulez-vous etudier?:'))
+        hmin = int(input('Quel est le champ mag minimum a etudier?:'))
+        #print(hmin+nbch)
+        if chx == 's':
+            axe = int(input('Quel est l.angle de rotation?:'))
+            trace_deltaSvsT(masse, axe, name, hmin, hmin+nbch, chx, cryst)
+        if chx == 'p':
+            anmin = int(input('L.angle minimale que vous voulez etudier:'))
+            anmax = int(input('L.angle maximale que vous voulez etudier:'))
+            nb = int(input('Quel est le pas entre deux angles?:'))
+            for ang in range(anmin, anmax+1, nb):
+                #plt.figure()
+                trace_deltaSvsT(masse, ang, name, hmin, hmin+nbch, chx, cryst)
+
+if (commande == 'dsa' ): #code pour faire ds vs angle pour différentes tepératures et un champ fixe
+        from _Called_dsvsAng_v3 import trace_dsVSang
+        save_path = 'C:/Users/Laurier/Desktop/EMCR/02- Data' +'/03-Data_'+ str(cryst)
+        ch = int(input('Quel est le champ mag d.etude?:'))
+        anmin = int(input('L.angle minimale que vous voulez etudier:'))
+        anmax = int(input('L.angle maximale que vous voulez etudier:'))
+        nb = int(input('Quel est le pas entre deux angles?:'))
+        N1 = str(name) + str(anmin) + '_ds_champ_'+ str(ch)+'.txt'
+        file = open(os.path.join(save_path, N1), 'r')
+        var =np.loadtxt(os.path.join(save_path,N1) ,delimiter="         ", skiprows= 1)
+        file.close()
+        for temp in var[:,1].tolist():
+            print('La temperature est ',temp)
+            trace_dsVSang(masse ,anmin, anmax, nb, temp, name, cryst, ch)
+
+if (commande == 'delS' ): #code pour faire la derive de delta S
+    from _Called_ddSvsAng_v3 import trace_ddeltaSvsAng
+    anglel = int(input('Quel est l.angle min:'))
+    chp = str(input('Quel est le champ mag a etudier?:'))
+    trace_ddeltaSvsAng(anglel, name, cryst, chp)
+    
+    
+if (commande == 'R' or commande == 'r'):
+        sys.exit()
