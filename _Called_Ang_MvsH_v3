@@ -1,0 +1,271 @@
+# -*- coding: utf-8 -*-
+"""
+Auteur: Olivier Bernard
+Créée mercredi le 23 mai 2019  à (10:15) 
+Entrer: Clavier
+Sortie: Moniteur
+
+Code permettant une tentative de déterminer l'évolution de la valeur absolue de 
+l'aimantation selon le champ H pour un angle donné (référence avec l'axe Easy = 0deg). Le code
+requiert d'avoir le fichier de l'axe hard ainsi que celui de l'axe easy pour pouvoir
+en extraire les données ainsi que de calculer la valeur de M pour un angle donné.
+
+Les fichiers sont ceux du SQUID sans l'en tête (on conserve le titre des colonnes).
+"""
+import numpy as np
+from matplotlib import pyplot as plt
+import math
+import os.path
+
+#----------------------------------------------------------------------------
+from _Fonctions_v2 import getColumns
+
+save_path = 'C:/Users/Laurier/Desktop/EMCR/02- Data/01-Fichier format dat'
+fpath = 'C:/Users/Laurier/Desktop/EMCR/02- Data'
+
+#Ouverture du fichier et definition des limites-------------------------------
+def traceAng_MvsH(masse, angle, N1, N2, doc, cryst):  
+    
+    t_d={0: str(N1), 1:str(N2)}
+    t_a= {0:'(Easy)' , 1:'(Hard)'}
+    t_c = {0:'Tk', 1:'Th', 2:'LM', 3:'LMh', 4:'FOe', 5:'Fh'}
+    Tsaut = 2
+
+    nom_doc= t_d[0] +'.txt'
+    file = open(os.path.join(save_path,nom_doc), 'r')
+    cols, indexToName = getColumns(file)
+    file.close()
+    print('La colonne temps de', t_d[0] ,'est d.une longueur de:', len(cols['Time'])) 
+
+    t_c[0] = list(np.float_(cols['Temperature (K)']))
+    t_c[2] = list(np.float_(cols['Long Moment (emu)'])/masse) #Division par masse pour avoir M
+    t_c[4] = list(np.float_(cols['Field (Oe)'])/10000) #Division par 10k pour avoir H en Tesla
+
+    nom_doch= t_d[1] +'.txt'
+    file = open(os.path.join(save_path,nom_doch), 'r')
+    cols, indexToName = getColumns(file)
+    file.close()
+    print('La colonne temps de', t_d[1] ,'est d.une longueur de:', len(cols['Time'])) 
+
+    t_c[1] = list(np.float_(cols['Temperature (K)']))
+    t_c[3] = list(np.float_(cols['Long Moment (emu)'])/masse) #Division par masse pour avoir M
+    t_c[5] = list(np.float_(cols['Field (Oe)'])/10000) #Division par 10k pour avoir H en Teslaç
+    
+    #-------------------------------------------------------------------------
+    nbval = 2 #Nombre de fichiers
+    i = 0 #Fichier initiale
+    e = len(t_c)+4 #Indique le nombre de liste/variables
+    x = [[] for i in range(e)] #pour les valeurs dans les .txt #ang,M,ME,Mh,H,HE,Hh,T,Truff, T , ch
+    x10 = [0]        #Append champ mag               
+    y= [[] for i in range(2)] #pour pst liste #pstL1, pstL2
+    while i < nbval:
+        tmax = max(t_c[0+i][:])
+        print('La température maximale de l.axe', t_a[i],' est de' , tmax , 'K')
+        champ = []
+        saute = []
+        Tb = round(min(t_c[0+i][:]), 1) #Indique la température minimale du fichier
+        n=0
+        pstlist = 0 #indique ou dans la liste le code est rendu (position d'une valeur)
+        while Tb < (tmax - Tsaut):
+            saut = 0 #Nombre de mesure pour la température 1
+            saut2 = 0 #Nombre de mesure pour la température suivante
+            while t_c[4+i][pstlist + saut] < 7: #Utilise le champ mag comme référence. D'hab 7T est max et atteint
+                x10.append(t_c[4+i][pstlist + saut+1])
+                saut += 1
+            while t_c[4+i][pstlist + saut + saut2 + 1 ] < 7: #Utilise le champ mag comme référence. D'hab 7T est max et atteint
+                saut2 += 1
+            T1 = sum(t_c[0+i][pstlist:pstlist + saut ])/len(t_c[0+i][pstlist:pstlist+saut]) #Determine la temperature moyenne de la prise de mesure
+            T2 = sum(t_c[0+i][pstlist + saut + 1 :pstlist + saut + saut2])/len(t_c[0+i][pstlist + saut+1:pstlist + saut + saut2])
+            dT = T2 - T1 #Determine le saut en température
+            c= i
+            champ.append(c)
+            saute.append(saut)
+            x[7+i].append(round(Tb,1)) #Apend les températures 
+            y[i].append(pstlist) #Append les positions dans les listes
+            n+=1
+            pstlist += saut+1
+            Tb += dT
+        i+= 1    
+    print(len(x[8]))   
+
+    theta = float(angle) #angle depart 
+    fd=open(os.path.join(fpath+'/03-Data_'+str(cryst), doc+ 'axe' + str(angle) +'.txt'), "w")
+    fd.write('Time'+','+'Comment'+','+'Field (Oe)'+','+'Temperature (K)'+','+'Long Moment (emu)'+','+'Long Scan Std Dev'+','+'Long Offset (cm)'+','+'Long Offset Std Dev'+','+'Long Algorithm'+','+'Long Reg Fit'+','+'Long Reg Factor'+','+'Trans Moment (emu)'+','+'Trans Scan Std Dev'+','+'Trans Offset (cm)'+','+'Trans Offset Std Dev'+','+'Trans Algorithm'+','+'Trans Reg Fit'+','+'Trans Reg Factor'+','+'Long Moment [w/o ABS] (emu)'+','+'Long Scan Std Dev [w/o ABS]'+','+'Long Offset [w/o ABS] (cm)'+','+'Long Offset Std Dev [w/o ABS]'+','+'Long Reg Fit [w/o ABS]'+','+'Trans Moment [w/o ABS] (emu)'+','+'Trans Scan Std Dev [w/o ABS]'+','+'Trans Offset [w/o ABS] (cm)'+','+'Trans Offset Std Dev [w/o ABS]'+','+'Trans Reg Fit [w/o ABS]'+','+'RSO Position (deg)'+','+'Amplitude (cm)'+','+'Frequency'+','+'Cycles to Average'+','+'Scans per Measurement'+','+'Delta Temp (K)'+','+'Error'+','+'EC Comp. Running'+','+'Using ABS'+','+"\n")
+    mn=0 #Suivi de la donnees calculees
+ #  
+    xch = 0
+    while x10[xch] < 7:
+        xch+=1
+        
+    for temp in (x[8][:len(x[8])-1]):
+        tch = temp #temperature choisie en K
+        for ch in x10[0:xch+1]: #verification pour un tour <<complet>>
+            Hch = ch
+            Hang = [abs(Hch*np.cos(math.radians(theta))), abs(Hch*np.sin(math.radians(theta)))] #Angles selon easy et hard
+            m = [x[7].index(tch), x[8].index(tch)] #Cherche la valeur de température dans la liste
+            k=0
+            while k < len(Hang):
+                z = y[k][m[k]] #Donne la position dans les listes des températures (et autres)
+                o = min(t_c[4+k][z:y[k][m[k]+1]], key=lambda x: abs(x - Hang[k])) #determine le champ mag le plus pres de celui etudie
+                p = t_c[4+k][z:y[k][m[k]+1]].index(o) #determine la position du champ le plus pres
+                if o > Hang[k]: #Si le champ o est plus grand que le champ etudie
+                    q = t_c[2+k][z + p] - t_c[2+k][z+ p -1] #difference de M
+                    r = t_c[4+k][z + p] - t_c[4+k][z + p -1] # difference de H
+                    s = q/r #Evolution de M vs H
+                    u = t_c[4+k][z + p] - Hang[k] #Max de H bracket - H[e ou h]
+                    v=(r-u)*s #qte var
+                    w = t_c[2+k][z + p -1] +v #Magnetisation finale (min bracket + var)
+                if o <= Hang[k]: #Si le champ o est plus petit que le champ etudie
+                    q = t_c[2+k][z + p+1] - t_c[2+k][z + p] #difference de M
+                    r = t_c[4+k][z + p+1] - t_c[4+k][z + p]  # difference de H
+                    s = q/r #Evolution de M vs H
+                    u = t_c[4+k][z + p+1] - Hang[k] #Max de H bracket - H[e ouh]
+                    v=(r-u)*s #qte var
+                    w = t_c[2+k][z + p] +v #Magnetisation finale (min bracket + var)
+                x[2+k].append(w) #Mise en note de ME ou Mh
+                k+=1 #Passage a l'etude de l'autre .3/fichier
+            Mtot = math.sqrt(x[2][mn]*x[2][mn] + x[3][mn]*x[3][mn]) #Grandeur de l'aimantation
+            x[0].append(theta) #Mise en note de l'angle
+            x[1].append(Mtot) #Mise en note de M total
+            x[4].append(ch)
+            x[9].append(tch)
+            mn +=1
+            
+    plt.plot(x[4],x[1], 'v', markersize = 1,)
+    plt.title(r'Variation de M en fonction de H du ' + cryst + '('+str(theta)+' deg)')
+    plt.xlabel(r'Champ $\mu_{0}$H') # axe x angle
+    plt.ylabel(r'M (Am$^2$ \kg)') #axe y aimantation
+    plt.show()
+    
+    kk=0
+    while kk < len(x[1]):
+        fd.write('1.0'+ ','+','+str(x[4][kk]*10000)+','+ str(x[9][kk]) + ',' + str(x[1][kk]*masse) +','+ ','+','+','+','+','+','+','+','+','+','+','+','+','+','+','+','+','+','+','+','+','+','+','+','+','+','+','+','+','+','+','+','+"\n")
+        kk +=1
+    fd.close()   
+    
+################################################################################################################################################################################################################################################
+   
+def traceAng_MvsHp(masse, N1, N2, doc, cryst, anmin, anmax, nb):  
+
+    t_d={0: str(N1), 1:str(N2)}
+    t_a= {0:'(Easy)' , 1:'(Hard)'}
+    t_c = {0:'Tk', 1:'Th', 2:'LM', 3:'LMh', 4:'FOe', 5:'Fh'}
+    Tsaut = 2
+
+    nom_doc= t_d[0] +'.txt'
+    file = open(os.path.join(save_path, nom_doc), 'r')
+    cols, indexToName = getColumns(file)
+    file.close()
+    print('La colonne temps de', t_d[0] ,'est d.une longueur de:', len(cols['Time'])) 
+
+    t_c[0] = list(np.float_(cols['Temperature (K)']))
+    t_c[2] = list(np.float_(cols['Long Moment (emu)'])/masse) #Division par masse pour avoir M
+    t_c[4] = list(np.float_(cols['Field (Oe)'])/10000) #Division par 10k pour avoir H en Tesla
+
+    nom_doch= t_d[1] +'.txt'
+    file = open(os.path.join(save_path,nom_doch), 'r')
+    cols, indexToName = getColumns(file)
+    file.close()
+    print('La colonne temps de', t_d[1] ,'est d.une longueur de:', len(cols['Time'])) 
+
+    t_c[1] = list(np.float_(cols['Temperature (K)']))
+    t_c[3] = list(np.float_(cols['Long Moment (emu)'])/masse) #Division par masse pour avoir M
+    t_c[5] = list(np.float_(cols['Field (Oe)'])/10000) #Division par 10k pour avoir H en Teslaç
+    
+    #-------------------------------------------------------------------------
+    nbval = 2 #Nombre de fichiers
+    i = 0 #Fichier initiale
+    e = len(t_c)+4 #Indique le nombre de liste/variables
+    x = [[] for i in range(e)] #pour les valeurs dans les .txt
+    x10 = [0]                       #ang,M,ME,Mh,H,HE,Hh,T,Truff, T , ch
+    y= [[] for i in range(2)] #pour pst liste #pstL1, pstL2
+    while i < nbval:
+        tmax = max(t_c[0+i][:])
+        print('La température maximale de l.axe', t_a[i],' est de' , tmax , 'K')
+        champ = []
+        saute = []
+        Tb = round(min(t_c[0+i][:]), 1) #Indique la température minimale du fichier
+        n=0
+        pstlist = 0 #indique ou dans la liste le code est rendu (position d'une valeur)
+        while Tb < (tmax - Tsaut):
+            saut = 0 #Nombre de mesure pour la température 1
+            saut2 = 0 #Nombre de mesure pour la température suivante
+            while t_c[4+i][pstlist + saut] < 7: #Utilise le champ mag comme référence. D'hab 7T est max et atteint
+                x10.append(t_c[4+i][pstlist + saut+1])
+                saut += 1
+            while t_c[4+i][pstlist + saut + saut2 + 1 ] < 7: #Utilise le champ mag comme référence. D'hab 7T est max et atteint
+                saut2 += 1
+            T1 = sum(t_c[0+i][pstlist:pstlist + saut ])/len(t_c[0+i][pstlist:pstlist+saut]) #Determine la temperature moyenne de la prise de mesure
+            T2 = sum(t_c[0+i][pstlist + saut + 1 :pstlist + saut + saut2])/len(t_c[0+i][pstlist + saut+1:pstlist + saut + saut2])
+            dT = T2 - T1 #Determine le saut en température
+            c= i
+            champ.append(c)
+            saute.append(saut)
+            x[7+i].append(round(Tb,1)) #Apend les températures 
+            y[i].append(pstlist) #Append les positions dans les listes
+            n+=1
+            pstlist += saut+1
+            Tb += dT
+        i+= 1    
+    print(len(x[8]))   
+
+    xch = 0
+    while x10[xch] < 7:
+        xch+=1
+        
+    for ang in range(anmin, anmax+1, nb):
+        x[0] = []
+        x[2] = []
+        x[3] = []
+        x[1] = []
+        x[4] = []
+        x[9] = []
+        theta = float(ang) #angle depart 
+        fd=open( os.path.join(fpath+'/03-Data_'+str(cryst), doc+ 'axe' + str(ang) +'.txt'), "w")
+        fd.write('Time'+','+'Comment'+','+'Field (Oe)'+','+'Temperature (K)'+','+'Long Moment (emu)'+','+'Long Scan Std Dev'+','+'Long Offset (cm)'+','+'Long Offset Std Dev'+','+'Long Algorithm'+','+'Long Reg Fit'+','+'Long Reg Factor'+','+'Trans Moment (emu)'+','+'Trans Scan Std Dev'+','+'Trans Offset (cm)'+','+'Trans Offset Std Dev'+','+'Trans Algorithm'+','+'Trans Reg Fit'+','+'Trans Reg Factor'+','+'Long Moment [w/o ABS] (emu)'+','+'Long Scan Std Dev [w/o ABS]'+','+'Long Offset [w/o ABS] (cm)'+','+'Long Offset Std Dev [w/o ABS]'+','+'Long Reg Fit [w/o ABS]'+','+'Trans Moment [w/o ABS] (emu)'+','+'Trans Scan Std Dev [w/o ABS]'+','+'Trans Offset [w/o ABS] (cm)'+','+'Trans Offset Std Dev [w/o ABS]'+','+'Trans Reg Fit [w/o ABS]'+','+'RSO Position (deg)'+','+'Amplitude (cm)'+','+'Frequency'+','+'Cycles to Average'+','+'Scans per Measurement'+','+'Delta Temp (K)'+','+'Error'+','+'EC Comp. Running'+','+'Using ABS'+','+"\n")
+        mn=0 #Suivi de la donnees calculees
+        for temp in (x[8][0:len(x[8])-1]):
+            tch = temp #temperature choisie en K
+            for ch in x10[0:xch+1]: #verification pour un tour <<complet>>
+                Hch = ch
+                Hang = [abs(Hch*np.cos(math.radians(theta))), abs(Hch*np.sin(math.radians(theta)))] #Angles selon easy et hard
+                m = [x[7].index(tch), x[8].index(tch)] #Cherche la valeur de température dans la liste
+                k=0
+                while k < len(Hang):
+                    z = y[k][m[k]] #Donne la position dans les listes des températures (et autres)
+                    o = min(t_c[4+k][z:y[k][m[k]+1]], key=lambda x: abs(x - Hang[k])) #determine le champ mag le plus pres de celui etudie
+                    p = t_c[4+k][z:y[k][m[k]+1]].index(o) #determine la position du champ le plus pres
+                    if o > Hang[k]: #Si le champ o est plus grand que le champ etudie
+                        q = t_c[2+k][z + p] - t_c[2+k][z+ p -1] #difference de M
+                        r = t_c[4+k][z + p] - t_c[4+k][z + p -1] # difference de H
+                        s = q/r #Evolution de M vs H
+                        u = t_c[4+k][z + p] - Hang[k] #Max de H bracket - H[e ou h]
+                        v=(r-u)*s #qte var
+                        w = t_c[2+k][z + p -1] +v #Magnetisation finale (min bracket + var)
+                    if o <= Hang[k]: #Si le champ o est plus petit que le champ etudie
+                        q = t_c[2+k][z + p+1] - t_c[2+k][z + p] #difference de M
+                        r = t_c[4+k][z + p+1] - t_c[4+k][z + p]  # difference de H
+                        s = q/r #Evolution de M vs H
+                        u = t_c[4+k][z + p+1] - Hang[k] #Max de H bracket - H[e ouh]
+                        v=(r-u)*s #qte var
+                        w = t_c[2+k][z + p] +v #Magnetisation finale (min bracket + var)
+                    x[2+k].append(w) #Mise en note de ME ou Mh
+                    k+=1 #Passage a l'etude de l'autre .3/fichier
+                Mtot = math.sqrt(x[2][mn]*x[2][mn] + x[3][mn]*x[3][mn]) #Grandeur de l'aimantation
+                x[0].append(theta) #Mise en note de l'angle
+                x[1].append(Mtot) #Mise en note de M total
+                x[4].append(ch)
+                x[9].append(tch)
+                mn +=1
+            
+        plt.plot(x[4],x[1], 'v', markersize = 1,)
+        plt.title(r'Variation de M en fonction de H du ' + cryst + '('+str(theta)+' deg)')
+        plt.xlabel(r'Champ $\mu_{0}$H') # axe x angle
+        plt.ylabel(r'M (Am$^2$ \kg)') #axe y aimantation
+        plt.show()
+    
+        kk=0
+        while kk < len(x[1]):
+            fd.write('1.0'+ ','+','+str(x[4][kk]*10000)+','+ str(x[9][kk]) + ',' + str(x[1][kk]*masse) +','+ ','+','+','+','+','+','+','+','+','+','+','+','+','+','+','+','+','+','+','+','+','+','+','+','+','+','+','+','+','+','+','+','+"\n")
+            kk +=1
+        fd.close()   
