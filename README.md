@@ -2,7 +2,7 @@
 Used for SQUID files reading and do some math with it.
 Codes utiles pour faire la lecture de fichier de SQUID et/ou PPMS (vérifier que le format des fichiers sont les mêmes
 
-Le Main_v2 est le code que vous devez utilisez pour appeler les autres: autrement dit, vous avez besoin de tous les codes pour avoir accès à toutes les fonctionnalités du code. 
+Le Main_vX est le code que vous devez utilisez pour appeler les autres: autrement dit, vous avez besoin de tous les codes pour avoir accès à toutes les fonctionnalités du code. 
 
 Le code n'est pas idiot proof donc, si vous n'entrez pas les bonne choses, le code peut cesser de fonctionner sans vous afficher d'erreur ou bien vous l'indiquez. 
 
