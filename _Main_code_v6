@@ -1,0 +1,116 @@
+# -*- coding: utf-8 -*-
+"""
+Auteur: Olivier Bernard
+Creer 24 mai 2019 a 9:22
+Entrer: Clavier
+Sortie: Moniteur
+
+Code central permettant l'appel de code qui font les calculs et autres commandes
+"""
+import sys
+import numpy as np
+import os.path
+
+save_path = 'C:/Users/Laurier/Desktop/EMCR/02- Data/01-Fichier format dat/' #localisation des datas brutes easy et hard axis
+fpath = 'C:/Users/Laurier/Desktop/EMCR/02- Data/03-Data_' #localisation d'ou seront sauvegarder les fichiers
+
+cryst = 'HoMn2O5' #{'HoMn2O5', 'TbMn2O5', 'TmMnO3', 'YbMn2O5, 'YbMnO3'}
+date = 190705 #(AAMMJJ)
+echantillon = 'C' #Lettre ou numeros...
+mm = 1.5 #{27.7, 8.32, 15.7, 1.5, 10} masse en mg
+
+masse = float(mm)*(10**-3) #masse en g
+print('La masse est de', masse ,'g')
+
+prefix = '_'+ str(echantillon)+'_MCE_'+ str(mm) +'mg_Holder'
+name = str(cryst) + prefix + '_axe'  #nom du doc sans le .txt ni l'angle
+
+commande = input('Que voulez-vous faire ( amh= MvsH pour différents T; ama = MvsAng pour un T et H fixe; s = delta s; dsa = dS vs Angle; delS = la derive de delta S ; r= rien )?:')
+
+if (commande == 'amh'):  #Code pour faire des calculs de M vs le champ. Besoin de fichiers de base (hard(1111) et easy(3333) axis)
+       from _Called_Ang_MvsH_v5 import traceAng_MvsH
+       nickname = str(cryst) + str(prefix)
+       titre = {0:'pres',1:'loin'}
+       tite = []
+       i = 0
+       print('Je vous suggère de prendre les axes easy et hard, ou des axes qui sont perpendiculaires')
+       while i<2:
+           x = input('Quel est l.angle le plus '+titre[i]+' de l.axe easy?:')
+           tite.append(x)
+           i +=1
+       chx = input('Voulez-vous etudiez un seul angle (s) ou plusieurs (p) ?:')
+       if chx == 's':
+            axe = int(input('Quel est l.angle de rotation?:'))
+            traceAng_MvsH(masse, axe, name+ str(tite[0]), name+str(tite[1]), nickname, cryst, save_path, echantillon,  fpath, date)
+       if chx == 'p':
+            from _Called_Ang_MvsH_v5 import traceAng_MvsHp
+            anmin = int(input('L.angle minimale que vous voulez etudier:'))
+            anmax = int(input('L.angle maximale que vous voulez etudiez:'))
+            nb = int(input('Quel est le pas entre deux angles?:'))
+            traceAng_MvsHp(masse,  name+ str(tite[0]), name+str(tite[1]), nickname, cryst, anmin, anmax, nb, echantillon, save_path, fpath, date)
+                
+if (commande == 'ama'): #Code pour faire des calculs de M vs l'angle. Besoin de fichiers de base (hard(1111) et easy(3333) axis)
+       titre = {0:'pres',1:'loin'}
+       tite = []
+       i = 0
+       print('Je vous suggère de prendre les axes easy et hard, ou des axes qui sont perpendiculaires')
+       chx = input('Voulez-vous etudiez un seul champ (s) ou plusieurs (p) ?:')
+       while i<2:
+           x = input('Quel est l.angle le plus '+titre[i]+' de l.axe easy?:')
+           tite.append(x)
+           i +=1     
+       if chx == 's':
+            from _Called_Ang_MvsAng_v5 import traceAng_MvsAngs
+            Hch = float(input('Quel est le champ a etudier?:'))
+            Tch = int(input('Quel est la temperature a etudiez?:'))
+            traceAng_MvsAngs(masse, Hch, Tch,   name+tite[0], name+tite[1], cryst, save_path, echantillon, date)
+       if chx == 'p':
+            chmin = int(input('Champ minimale que vous voulez etudier:'))
+            chmax = int(input('Champ maximale que vous voulez etudiez:'))
+            nb = int(input('Quel est le pas entre deux champs?:'))
+            from _Called_Ang_MvsAng_v5 import traceAng_MvsAngp
+            for hch in range(chmin, chmax+1, nb):
+                traceAng_MvsAngp(masse, hch,  name+tite[0], name+tite[1], cryst, save_path, echantillon, fpath, date)
+       
+if (commande == 's' ) : #Code pour calculer dS vs T. Beosin des documents avec les angles pour faire les calculs (au moins 2)
+        from _Called_Trace_deltaSvsT_v5 import trace_deltaSvsT
+        chx = input('Voulez-vous etudiez un seul angle (s) ou plusieurs (p) ?:')
+        nbch = int(input('Combien de champ mag voulez-vous etudier?:'))
+        hmin = int(input('Quel est le champ mag minimum a etudier?:'))
+        #print(hmin+nbch)
+        if chx == 's':
+            axe = int(input('Quel est l.angle de rotation?:'))
+            trace_deltaSvsT(masse, axe, name, hmin, hmin+nbch, chx, cryst, echantillon, fpath, date)
+        if chx == 'p':
+            anmin = int(input('L.angle minimale que vous voulez etudier:'))
+            anmax = int(input('L.angle maximale que vous voulez etudier:'))
+            nb = int(input('Quel est le pas entre deux angles?:'))
+            for ang in range(anmin, anmax+1, nb):
+                #plt.figure()
+                trace_deltaSvsT(masse, ang, name, hmin, hmin+nbch, chx, cryst, echantillon, fpath, date)
+
+if (commande == 'dsa' ): #code pour faire ds vs angle pour différentes tepératures et un champ fixe
+        from _Called_dsvsAng_v5 import trace_dsVSang
+        ch = int(input('Quel est le champ mag d.etude?:'))
+        anmin = int(input('L.angle minimale que vous voulez etudier:'))
+        anmax = int(input('L.angle maximale que vous voulez etudier:'))
+        nb = int(input('Quel est le pas entre deux angles?:'))
+        N1 = str(name) + str(anmin) + '_ds_champ_'+ str(ch)+'.txt'
+        file = open(os.path.join(fpath + str(cryst) +'/' + str(echantillon)+ '/' + str(date), N1), 'r')
+        var =np.loadtxt(os.path.join(fpath + str(cryst) +'/' + str(echantillon)+ '/' + str(date),N1) , skiprows= 1)
+        file.close()
+        tempabay = var[:,1].tolist()
+        print(tempabay)
+        for temp in tempabay:
+            print('La temperature est ',temp)
+            trace_dsVSang(masse ,anmin, anmax, nb, temp, name, cryst, ch, echantillon, fpath, date)
+
+if (commande == 'delS' ): #code pour faire la derive de delta S
+    from _Called_ddSvsAng_v5 import trace_ddeltaSvsAng
+    anglel = int(input('Quel est l.angle min:'))
+    chp = str(input('Quel est le champ mag a etudier?:'))
+    trace_ddeltaSvsAng(anglel, name, cryst, chp, echantillon, fpath, date)
+    
+    
+if (commande == 'R' or commande == 'r'):
+        sys.exit()
