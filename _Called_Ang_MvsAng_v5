@@ -27,7 +27,6 @@ def traceAng_MvsAngs(masse,Hch, tch, N1, N2, cryst, save_path, ech, date):
     t_c = {0:'Tk', 1:'Th', 2:'LM', 3:'LMh', 4:'FOe', 5:'Fh'}
     Tsaut = 2
 
-    #Axe = t_a[0] #Important de le spécifier aussi
     nom_doc= str(N1) +'.txt'
     file = open(os.path.join(save_path + str(cryst) +'/'+ str(ech) + '/' + str(date), nom_doc), 'r')
     cols, indexToName = getColumns(file)
@@ -40,7 +39,7 @@ def traceAng_MvsAngs(masse,Hch, tch, N1, N2, cryst, save_path, ech, date):
 
     nom_doch= str(N2) +'.txt'
     file = open(os.path.join(save_path + str(cryst) +'/'+ str(ech) + '/' + str(date), nom_doch), 'r')
-    cols, indexToName = getColumns(file)
+    cols, indexToName = getColumns(file) #Il vous faut voir le fichier de fonction
     file.close()
     print('La colonne temps de', str(N2) ,'est d.une longueur de:', len(cols['Time'])) 
 
@@ -56,31 +55,31 @@ def traceAng_MvsAngs(masse,Hch, tch, N1, N2, cryst, save_path, ech, date):
                             #ang,M,ME,Mh,H,HE,Hh,T,Truff
     y= [[] for i in range(2)] #pour pst liste #pstL1, pstL2
     while i < nbval:
-        tmax = max(t_c[0+i][:])
+        tmax = max(t_c[0+i][:]) #Va chercher le T max
         print('La température maximale de l.axe', t_a[i],' est de' , tmax , 'K')
-        champ = []
-        saute = []
+        champ = [] #Liste qui tien un registre des champs mag
+        saute = [] #Liste qui tien un registre du nombre de mesure pour un T donnee
         Tb = round(min(t_c[0+i][:]), 1) #Indique la température minimale du fichier
         n=0
         pstlist = 0 #indique ou dans la liste le code est rendu (position d'une valeur)
         while Tb < (tmax - Tsaut):
-            saut = 0 #Nombre de mesure pour la température 1
-            saut2 = 0 #Nombre de mesure pour la température suivante
+            saut = 0 #Nombre de mesure pour la température 1 (disons il y a 15 mesures pour T=2K)
+            saut2 = 0 #Nombre de mesure pour la température suivante (disons il y a 16 mesures pour T=2.1K)
             while t_c[4+i][pstlist + saut] < 7: #Utilise le champ mag comme référence. D'hab 7T est max et atteint
                 saut += 1
             while t_c[4+i][pstlist + saut + saut2 + 1 ] < 7: #Utilise le champ mag comme référence. D'hab 7T est max et atteint
                 saut2 += 1
             T1 = sum(t_c[0+i][pstlist:pstlist + saut ])/len(t_c[0+i][pstlist:pstlist+saut]) #Determine la temperature moyenne de la prise de mesure
-            T2 = sum(t_c[0+i][pstlist + saut + 1 :pstlist + saut + saut2])/len(t_c[0+i][pstlist + saut+1:pstlist + saut + saut2])
+            T2 = sum(t_c[0+i][pstlist + saut + 1 :pstlist + saut + saut2])/len(t_c[0+i][pstlist + saut+1:pstlist + saut + saut2]) #Determine la temperature moyenne de la prise de mesure suivante
             dT = T2 - T1 #Determine le saut en température
             c= i
-            champ.append(c)
-            saute.append(saut)
-            x[7+i].append(round(Tb,1))
-            y[i].append(pstlist)
+            champ.append(c) #prise en note du champ mag 
+            saute.append(saut) #prise en note du nombre de mesures
+            x[7+i].append(round(Tb,1)) #arrondi de la mesure
+            y[i].append(pstlist) #prise en note de la position dans le fichier
             n+=1
             pstlist += saut+1
-            Tb += dT
+            Tb += dT #changement de la temperature
         i+= 1
     print('Position des groupes de mesures:',y)
     print('Températures:',x[7], x[8])
@@ -127,7 +126,7 @@ def traceAng_MvsAngs(masse,Hch, tch, N1, N2, cryst, save_path, ech, date):
     plt.legend( loc='best',  frameon = True)
     plt.show()
   
- ##############################################################################  
+ #Lire les commentaires de la premiere partie #############################################################################  
 def traceAng_MvsAngp(masse,Hch, N1, N2, cryst , save_path, ech, fpath, date):  
 
     t_a= {0:'(Easy)' , 1:'(Hard)'}
