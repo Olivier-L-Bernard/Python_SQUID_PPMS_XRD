@@ -97,7 +97,7 @@ if (commande == 'dsa' ): #code pour faire ds vs angle pour différentes tepérat
         nb = int(input('Quel est le pas entre deux angles?:'))
         N1 = str(name) + str(anmin) + '_ds_champ_'+ str(ch)+'.txt'
         file = open(os.path.join(fpath + str(cryst) +'/' + str(echantillon)+ '/' + str(date), N1), 'r')
-        var =np.loadtxt(os.path.join(fpath + str(cryst) +'/' + str(echantillon)+ '/' + str(date),N1) , skiprows= 1)
+        var =np.loadtxt(os.path.join(fpath + str(cryst) +'/' + str(echantillon)+ '/' + str(date),N1) ,delimiter = ',', skiprows= 1)
         file.close()
         tempabay = var[:,1].tolist()
         print(tempabay)
