@@ -31,7 +31,7 @@ def trace_ddeltaSvsAng(angle_min, doc, cryst, champ , ech, fpath, date):
         
         nom_d = doc +'(dSvsA)'+ str(tempi) +'K'+ str(champ)+ 'T'+'.txt'
         file2 = open(os.path.join(fpath+str(cryst)+ '/' + str(ech) + '/' + str(date), nom_d) , 'r')
-        var2 =np.loadtxt(os.path.join(fpath+str(cryst)+ '/' + str(ech) + '/' + str(date),nom_d) ,skiprows= 1)
+        var2 =np.loadtxt(os.path.join(fpath+str(cryst)+ '/' + str(ech) + '/' + str(date),nom_d) ,delimiter = ',',skiprows= 1)
         file2.close()           
         i=0
         xx = []
