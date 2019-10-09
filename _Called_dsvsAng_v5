@@ -1,0 +1,39 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Tue May 28 15:23:58 2019
+
+@author: Laurier
+"""
+
+import numpy as np
+from matplotlib import pyplot as plt
+import os.path
+
+#Ouverture du fichier et definition des limites-------------------------------
+def trace_dsVSang(masse, angle_min, angle_max, pas_angle, temp, doc, cryst, champ, ech, fpath, date): 
+    
+    angly = []
+    dsy = []
+    print(fpath+ str(cryst) +'/' + str(ech)+ '/' + str(date), doc +'(dSvsA)'+ str(temp) +'K'+ str(champ)+ 'T')
+    fd=open(os.path.join(fpath+ str(cryst) +'/' + str(ech)+ '/' + str(date), doc +'(dSvsA)'+ str(temp) +'K'+ str(champ)+ 'T'+'.txt'), "w")
+    fd.write(str('delta s') + ',' + str('angle') + ',' + 'Temperature (K)' +','+ str('Champ (H)')+ ',' + "\n")
+    for ang in range(angle_min, angle_max+1, pas_angle):
+        nom_doc =  doc +  str(ang) + '_ds_champ_' + str(champ)+'.txt'
+        file = open(os.path.join(fpath+ str(cryst) +'/' + str(ech)+ '/' + str(date),nom_doc), 'r')
+        var = np.loadtxt(os.path.join(fpath+ str(cryst) +'/' + str(ech)+ '/' + str(date),nom_doc) ,  delimiter = ',' , skiprows= 1)
+        file.close()
+        index_temp = 0
+        indexa = var[:,1].tolist()
+        index_temp = indexa.index(temp)
+        print('L.angle est de ', ang)
+        print('La position dans la liste est ', index_temp)
+        fd.write(str(var[index_temp,0]) + ',' + str(float(ang)) +','+ str(temp)+','+ str(float(champ)) + "\n")
+        angly.append(ang)
+        dsy.append(var[index_temp,0])
+    fd.close()
+    plt.plot(angly, dsy, label= str(temp) +'K')
+    plt.legend( loc='best',  frameon = True)
+    plt.xlabel(r'Angle $\theta$') # axe x angle
+    plt.ylabel(r'$-\Delta$ S (J/kg K)') #axe y delta s
+    plt.title(r'Variation de $\Delta$s en fonction de $\theta$ du '+str(cryst)+' a '+str(champ)+'T')
+    print('Le champ est de ', str(champ), 'T')
