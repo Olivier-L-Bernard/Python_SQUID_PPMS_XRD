@@ -1,4 +1,4 @@
-# Python_SQUID
+# Python_SQUID or PPMS
 Used for SQUID files reading and do some math with it.
 Codes utiles pour faire la lecture de fichier de SQUID et/ou PPMS (vérifier que le format des fichiers sont les mêmes
 
