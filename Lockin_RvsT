@@ -1,0 +1,149 @@
+import time
+import sys
+
+from slave.transport import Visa
+from slave.keithley import k2182
+from slave.srs import sr850
+
+import PyQDInstrument as pqi
+
+from AsciiDataFile.Writers import DataColumnWriter as Writer
+
+import numpy as np
+
+from os import path
+
+Visa('GPIB::19').clear()
+Visa('GPIB::11').clear()
+
+KV = k2182.K2182(Visa('GPIB::19'))
+lockin = sr850.SR850(Visa('GPIB::8'))
+
+KV.sense.auto_range = True
+
+applied_voltage = 1
+external_resistance = 1e6
+
+lockin.reference_mode = 'internal'
+lockin.amplitude = 1
+lockin.phase = 0
+lockin.input = 'A-B'
+lockin.ch1_display = 'r'
+lockin.sensitivity = 10e-3
+
+# lockin.filter_slope = 24
+# lockin.sync_filter = True
+
+# lockin.time_constant = 0.3
+
+PPMS = pqi.PPMS('127.0.0.1', 11000)
+
+apply_current = 1e-6
+
+data_path = r'.\Data'
+
+column_names_units = [
+    ('index','count'),
+    ('time','s'),
+    ('temperature','K'),
+    ('magnetic_field','Oe'),
+    ('applied_voltage','V'),
+    ('external_resistance','ohm'),
+    ('voltage','V'),
+    ('voltage_std','V'),
+    ('resistance','ohm'),
+    ('resistance_std','ohm'),
+    ('NOM','count')
+    ]
+
+column_names = [cnu[0] for cnu in column_names_units]
+column_units = [cnu[1] for cnu in column_names_units]
+
+def to_do():
+
+    frequencies = [100,500,1000]
+    wait_times = [60,1,1]
+    number_of_measurements = [10,10,10]
+    data_files = list()
+    for frequency in frequencies:
+        data_file = Writer(path.join(data_path,f'test_freq_{frequency:.0f}_Hz.txt'))
+        data_file.write_header(column_names,column_units)
+        data_files.append(data_file)
+
+    measurement_fct = lambda t0,i : measure_many_frequencies(frequencies,wait_times,number_of_measurements,data_files,t0,i)
+
+    temperatures = np.logspace(np.log10(2),np.log10(300),100)
+    
+    step_by_step_temperature(temperatures,3,measurement_fct)
+
+    for data_file in data_files:
+        data_file.close()
+
+
+def step_by_step_temperature(temperatures,temperature_rate,measurement_fct,initial_temperature = True):
+
+    if initial_temperature:
+        PPMS.temperature_rate = 10
+        print(f'Going to {temperatures[0]} K fast')
+        PPMS.temperature = temperatures[0]
+        wait_temperature()
+
+    t0 = time.time()
+    PPMS.temperature_rate = temperature_rate
+
+    for i, temperature in enumerate(temperatures):
+        PPMS.temperature = temperature
+        print(f'Going to {temperature} K')
+        wait_temperature()
+
+        measurement_fct(t0,i)
+        
+    return None
+
+def measure_many_frequencies(frequencies,wait_times,number_of_measurements,data_files,t0,i):
+
+    for (frequency,wait_time,number_of_measurement,data_file) in zip(frequencies,wait_times,number_of_measurements,data_files):
+
+        lockin.frequency = frequency
+
+        print(f'Applying {frequency:.2e} Hz')
+        print(f'Waiting to {wait_time} s')
+        time.sleep(wait_time)
+
+        V_array = np.zeros((number_of_measurement,))
+        for im in range(number_of_measurement):
+            V_array[im] = KV.voltage
+
+        duration = time.time()-t0
+        temperature = PPMS.temperature
+        field = PPMS.field
+
+        voltage = np.mean(V_array)
+        voltage_std = np.std(V_array)
+
+        resistance = voltage/(applied_voltage-voltage)*external_resistance
+        resistance_std = external_resistance/applied_voltage*voltage_std
+
+        new_data = [
+            i,
+            duration,
+            temperature,
+            field,
+            applied_voltage,
+            external_resistance,
+            voltage,
+            voltage_std,
+            resistance,
+            resistance_std,
+            number_of_measurement]
+        print(new_data)
+        data_file.add_data_point(new_data)
+
+def wait_temperature():
+    while True:
+        time.sleep(5)
+        if PPMS.temperature_status == '1':
+            break
+
+to_do()
+quit()
