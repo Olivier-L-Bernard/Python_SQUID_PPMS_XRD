@@ -1,0 +1,123 @@
+import time
+import sys
+
+import numpy as np
+
+from slave.transport import Visa
+from slave.quantum_design import ppms
+from slave.keithley import k2182
+
+from AsciiDataFile.Writers import DataColumnWriter as Writer
+
+from os import path
+
+Visa('GPIB::15').clear()
+Visa('GPIB::18').clear()
+
+PPMS = ppms.PPMS(Visa('GPIB::15'))
+#KV = k2182.K2182(Visa('GPIB::19')) #HP
+KV = k2182.K2182(Visa('GPIB::18')) #Keitlhey
+
+KV.sense.nplc = 0.1
+
+def to_do():
+
+    column_names_units = [
+        ('index','count'),
+        ('time','s'),
+        ('lap','s'),
+        ('position','deg'),
+        ('displacement','deg'),
+        ('voltage','V'),
+        ('slowdown','count')
+        ]
+
+    column_names = [cnu[0] for cnu in column_names_units]
+    column_units = [cnu[1] for cnu in column_names_units]
+
+    data_path = r'.\Data'
+
+    assert path.exists(data_path)
+   
+    angle_speed = [(60,3),(90,13),(120,3),(90,13), (60,3),(90,13),(120,3),(90,13), (60,3),(90,13),(120,3),(90,13)]
+    
+    move_to_angle(45)
+    move_to_angle(move_to_list[mtl])
+    time.sleep(5)
+    #move_to_angle(180)
+    datas = list()
+    t0 = time.time()
+    for angle, speed in angle_speed:
+        data = measure_to_angle(angle,t0 = t0,slowdown = speed)
+        datas.append(data)
+        j=0
+        while j < temps:
+            data = measure_to_angle2(angle,t0 = t0,slowdown = speed)
+            time.sleep(1)
+            datas.append(data)
+            j+=1
+            print(j)
+
+    # Merge all data
+    all_data = np.zeros((0,len(column_names_units)))
+    for data in datas:
+        all_data = np.concatenate((all_data,data),axis = 0)
+    # Compute lap and displacement
+    all_data[1:,2] = np.diff(all_data[:,1])
+    all_data[1:,4] = np.diff(all_data[:,3])
+
+    # Write data file
+    data_file = Writer(path.join(data_path,'data_file.txt'),auto_numbering = True)
+    data_file.write_header(column_names,column_units)
+    data_file.write_values(all_data)
+
+    data_file.close()
+
+
+def define_limit_angle(angle):
+
+    PPMS.move_to_limit(angle)
+    while not PPMS.system_status['sample_position'] == 'stopped':
+        pass
+
+def move_to_angle(angle_end,slowdown = 0):
+
+    PPMS.move(angle_end,slowdown = slowdown)
+    while not PPMS.system_status['sample_position'] == 'stopped':
+        # pass
+        print(PPMS.sample_position[2])
+
+def measure_to_angle(angle_end,t0 = 0,slowdown = 0):
+
+    datas = np.zeros((1000,7))
+    i = 0
+    PPMS.move(angle_end,slowdown = slowdown)
+    while not PPMS.system_status['sample_position'] == 'stopped':
+        duration = time.time()-t0
+        position = PPMS.sample_position[2]
+        voltage = KV.fetch()
+        datas[i,:] = [i,duration,0,position,0,voltage,slowdown]
+        i += 1
+
+    return datas[:i,:]
+
+def measure_to_angle2(angle_end,t0 = 0,slowdown = 0):
+
+    datas = np.zeros((1000,7))
+    i = 0
+    PPMS.move(angle_end,slowdown = slowdown)
+    while PPMS.system_status['sample_position'] == 'stopped' and i< 2:
+        duration = time.time()-t0
+        position = PPMS.sample_position[2]
+        voltage = KV.fetch()
+        datas[i,:] = [i,duration,0,position,0,voltage,slowdown]
+        i += 1
+
+    return datas[:i]
+
+mtl = 0
+temps = 5
+move_to_list = [90,180]
+to_do()
+move_to_angle(90)
+quit()
