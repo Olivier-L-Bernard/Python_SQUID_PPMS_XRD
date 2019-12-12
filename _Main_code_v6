@@ -14,10 +14,10 @@ import os.path
 save_path = 'C:/Users/Laurier/Desktop/EMCR/02- Data/01-Fichier format dat/' #localisation des datas brutes easy et hard axis
 fpath = 'C:/Users/Laurier/Desktop/EMCR/02- Data/03-Data_' #localisation d'ou seront sauvegarder les fichiers
 
-cryst = 'HoMn2O5' #{'HoMn2O5', 'TbMn2O5', 'TmMnO3', 'YbMn2O5, 'YbMnO3'}
-date = 190705 #(AAMMJJ)
-echantillon = 'C' #Lettre ou numeros...
-mm = 1.5 #{27.7, 8.32, 15.7, 1.5, 10} masse en mg
+cryst = 'TmMnO3' #{'HoMn2O5', 'TbMn2O5', 'TmMnO3', 'YbMn2O5, 'YbMnO3'}
+date =  190906 #(AAMMJJ) 190705 190906
+echantillon = 'A' #Lettre ou numeros...
+mm = 10 #{27.7, 8.32, 15.7, 1.5, 10} masse en mg
 
 masse = float(mm)*(10**-3) #masse en g
 print('La masse est de', masse ,'g')
@@ -110,7 +110,6 @@ if (commande == 'delS' ): #code pour faire la derive de delta S
     anglel = int(input('Quel est l.angle min:'))
     chp = str(input('Quel est le champ mag a etudier?:'))
     trace_ddeltaSvsAng(anglel, name, cryst, chp, echantillon, fpath, date)
-    
-    
+     
 if (commande == 'R' or commande == 'r'):
         sys.exit()
