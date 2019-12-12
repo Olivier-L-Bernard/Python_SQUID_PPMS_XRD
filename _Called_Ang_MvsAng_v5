@@ -144,7 +144,6 @@ def traceAng_MvsAngp(masse,Hch, N1, N2, cryst , save_path, ech, fpath, date):
     t_c[2] = list(np.float_(cols['Long Moment (emu)'])/masse) #Division par masse pour avoir M
     t_c[4] = list(np.float_(cols['Field (Oe)'])/10000) #Division par 10k pour avoir H en Tesla
 
-    nom_doch= str(N2) +'.txt'
     file = open(os.path.join(save_path + str(cryst) +'/'+ str(ech) + '/' + str(date), nom_doc), 'r')
     cols, indexToName = getColumns(file)
     file.close()
