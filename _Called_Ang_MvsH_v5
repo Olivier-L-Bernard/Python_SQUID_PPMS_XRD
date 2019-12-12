@@ -85,7 +85,7 @@ def traceAng_MvsH(masse, angle, N1, N2, doc, cryst, save_path, ech, fpath, date)
     print(len(x[8]))   
 
     theta = float(angle) #angle depart 
-    fd=open(os.path.join(fpath +str(cryst)+'/'+ str(ech) + '/' +str(date), doc+ 'axe' + str(angle) +'.txt'), "w")
+    fd=open(os.path.join(fpath +str(cryst)+'/'+ str(ech) + '/' +str(date), doc+ '_axe' + str(angle) +'.txt'), "w")
     fd.write('Time'+','+'Comment'+','+'Field (Oe)'+','+'Temperature (K)'+','+'Long Moment (emu)'+','+'Long Scan Std Dev'+','+'Long Offset (cm)'+','+'Long Offset Std Dev'+','+'Long Algorithm'+','+'Long Reg Fit'+','+'Long Reg Factor'+','+'Trans Moment (emu)'+','+'Trans Scan Std Dev'+','+'Trans Offset (cm)'+','+'Trans Offset Std Dev'+','+'Trans Algorithm'+','+'Trans Reg Fit'+','+'Trans Reg Factor'+','+'Long Moment [w/o ABS] (emu)'+','+'Long Scan Std Dev [w/o ABS]'+','+'Long Offset [w/o ABS] (cm)'+','+'Long Offset Std Dev [w/o ABS]'+','+'Long Reg Fit [w/o ABS]'+','+'Trans Moment [w/o ABS] (emu)'+','+'Trans Scan Std Dev [w/o ABS]'+','+'Trans Offset [w/o ABS] (cm)'+','+'Trans Offset Std Dev [w/o ABS]'+','+'Trans Reg Fit [w/o ABS]'+','+'RSO Position (deg)'+','+'Amplitude (cm)'+','+'Frequency'+','+'Cycles to Average'+','+'Scans per Measurement'+','+'Delta Temp (K)'+','+'Error'+','+'EC Comp. Running'+','+'Using ABS'+','+"\n")
     mn=0 #Suivi de la donnees calculees
  #  
@@ -127,7 +127,8 @@ def traceAng_MvsH(masse, angle, N1, N2, doc, cryst, save_path, ech, fpath, date)
             x[9].append(tch)
             mn +=1
             
-    plt.plot(x[4],x[1], 'v', markersize = 1,)
+    plt.plot(x[4],x[1], 'v', color='b',markersize = 1,)
+    #plt.plot(x[4],x[1], color='b', linewidth = 1,)
     plt.title(r'Variation de M en fonction de H du ' + cryst + '('+str(theta)+' deg)')
     plt.xlabel(r'Champ $\mu_{0}$H') # axe x angle
     plt.ylabel(r'M (Am$^2$ \kg)') #axe y aimantation
@@ -216,7 +217,7 @@ def traceAng_MvsHp(masse, N1, N2, doc, cryst, anmin, anmax, nb, ech, save_path, 
         x[4] = [] #H
         x[9] = [] #T
         theta = float(ang) #angle depart 
-        fd=open( os.path.join(fpath +str(cryst)+'/'+ str(ech) + '/' +str(date), doc+ 'axe' + str(ang) +'.txt'), "w")
+        fd=open( os.path.join(fpath +str(cryst)+'/'+ str(ech) + '/' +str(date), doc+ '_axe' + str(ang) +'.txt'), "w")
         fd.write('Time'+','+'Comment'+','+'Field (Oe)'+','+'Temperature (K)'+','+'Long Moment (emu)'+','+'Long Scan Std Dev'+','+'Long Offset (cm)'+','+'Long Offset Std Dev'+','+'Long Algorithm'+','+'Long Reg Fit'+','+'Long Reg Factor'+','+'Trans Moment (emu)'+','+'Trans Scan Std Dev'+','+'Trans Offset (cm)'+','+'Trans Offset Std Dev'+','+'Trans Algorithm'+','+'Trans Reg Fit'+','+'Trans Reg Factor'+','+'Long Moment [w/o ABS] (emu)'+','+'Long Scan Std Dev [w/o ABS]'+','+'Long Offset [w/o ABS] (cm)'+','+'Long Offset Std Dev [w/o ABS]'+','+'Long Reg Fit [w/o ABS]'+','+'Trans Moment [w/o ABS] (emu)'+','+'Trans Scan Std Dev [w/o ABS]'+','+'Trans Offset [w/o ABS] (cm)'+','+'Trans Offset Std Dev [w/o ABS]'+','+'Trans Reg Fit [w/o ABS]'+','+'RSO Position (deg)'+','+'Amplitude (cm)'+','+'Frequency'+','+'Cycles to Average'+','+'Scans per Measurement'+','+'Delta Temp (K)'+','+'Error'+','+'EC Comp. Running'+','+'Using ABS'+','+"\n")
         mn=0 #Suivi de la donnees calculees
         for temp in (x[8][0:len(x[8])-1]):
@@ -254,7 +255,7 @@ def traceAng_MvsHp(masse, N1, N2, doc, cryst, anmin, anmax, nb, ech, save_path, 
                 mn +=1
             
         plt.plot(x[4],x[1], 'v', markersize = 1,)
-        plt.title(r'Variation de M en fonction de H du ' + cryst + '('+str(theta)+' deg)')
+        plt.title(r'Variation de M en fonction de H du ' + cryst )
         plt.xlabel(r'Champ $\mu_{0}$H') # axe x champ
         plt.ylabel(r'M (Am$^2$ \kg)') #axe y aimantation
         plt.show()
