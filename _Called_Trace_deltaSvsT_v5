@@ -12,8 +12,6 @@ import numpy as np
 from matplotlib import pyplot as plt
 import os.path
 
-
-
 #----------------------------------------------------------------------------
 from _Fonctions_v2 import getColumns
 
@@ -21,7 +19,7 @@ from _Fonctions_v2 import getColumns
 def inte(x1,x2,x3,x4):
     d1 = np.trapz(x1, x2, 0.01)
     d2 = np.trapz(x3, x4, 0.01)
-    return d1-d2
+    return d1-d2 
 
 #Calculs du delta s et ecriture des fichier txt-------------------------------
 def trace_deltaSvsT(masse, angle, titre, i ,nbval, chx, cryst, ech, fpath, date): 
