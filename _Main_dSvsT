@@ -1,0 +1,139 @@
+# -*- coding: utf-8 -*-
+"""
+Auteur: Olivier Bernard
+Créée mercredi le 8 mai 2019  à (10:30) 
+Entrer: Clavier
+Sortie: Moniteur
+
+Code permettant de lire, classer et déposer dans des liste des éléments de fi-
+chier .txt
+"""
+import numpy as np
+from matplotlib import pyplot as plt
+import os.path
+import seaborn as sns
+from scipy.interpolate import interp1d
+
+#----------------------------------------------------------------------------
+from _Fonctions_v2 import getColumns
+
+#intégration:-----------------------------------------------------------------
+def inte(x1,x2,x3,x4):
+    d1 = np.trapz(x1, x2, 0.01)
+    d2 = np.trapz(x3, x4, 0.01)
+    #print(d1,d2)
+    return d1-d2 
+
+#Calculs du delta s et ecriture des fichier txt-------------------------------
+def trace_deltaSvsT(masse, angle, titre, i ,nbval, chx, cryst, ech, fpath, date,crystt): 
+ 
+    NUM_COLORS = nbval
+    LINE_STYLES = ['solid', 'dashed', 'dashdot', 'dotted']
+    NUM_STYLES = len(LINE_STYLES)
+    sns.reset_orig()  # get default matplotlib styles back
+    clrs = sns.color_palette('husl', n_colors=NUM_COLORS)  # a list of RGB tuples
+    #fpath = 'C:/Users/Laurier/Desktop/EMCR/02- Data'
+    
+    Axe = '('+str(angle)+'deg)' #Important de le spécifier aussi
+    print('L.angle selectionne est:', Axe)
+    Nom = str(titre)+str(angle)  #Très important de spécifier. 
+
+    file = open(os.path.join(fpath+ str(cryst) +'/' + str(ech)+ '/' + str(date), Nom+'.txt'), 'r')
+    cols, indexToName = getColumns(file)
+    file.close()
+    print('Le fichier', Nom,' a:', len(cols['Time']),'mesures') 
+    
+    font = 10
+    font2 = 10
+    
+    Tsaut = 2
+    Tk = list(np.float_(cols['Temperature (K)']))
+    LM = list(np.float_(cols['Long Moment (emu)'])/masse) #Division par masse pour avoir M
+    FOe = list(np.float_(cols['Field (Oe)'])/10000) #Division par 10k pour avoir H en Tesla
+    tmax = max(Tk[:])
+    print('L.axe', Axe , 'a une température maximale de' , tmax , 'K')
+    while i < nbval:
+        ds = []
+        champ = []
+        moytr = []
+        tt = []
+        Tmoy=[]
+        saute = []
+        pstL = []
+        Tb = min(Tk[:])-1
+        n=0
+        pstlist = 0
+        fd=open(os.path.join(fpath+ str(cryst) +'/' + str(ech)+ '/' + str(date), Nom + '_ds' + '_champ_' + str(i) + '.txt'), "w")
+        fd.write(str('delta s') + "         " + str('Temperature (K)') + "         " +str('Champ (H)')+ "         "+ 'Temp (pas round)' + "\n")
+        while Tb < (tmax - Tsaut):
+            saut = 0
+            saut2 = 0
+            while FOe[pstlist + saut] < 7:
+                saut += 1
+            ind = FOe[pstlist : pstlist + saut +1].index(i)
+            while FOe[pstlist + saut + saut2 +1 ] < 7:
+                saut2 += 1
+            ind2 = FOe[pstlist + saut + 1 : pstlist + saut + saut2 +2].index(i)
+            #print(FOe[pstlist + saut + 1 : pstlist + saut + saut2 +2])
+            T1 = sum(Tk[pstlist:pstlist + saut ])/len(Tk[pstlist:pstlist+saut])
+            #print('T1',T1)
+            T2 = sum(Tk[pstlist + saut + 1 :pstlist + saut + saut2])/len(Tk[pstlist + saut+1:pstlist + saut + saut2])
+            #print('T2',T2)
+            tmoy = (T1 + T2)/2
+            dT = T2 - T1
+            print(FOe[pstlist + saut + 1: pstlist + saut + 1 + ind2+1])
+            #print(Tk[pstlist + saut + 1: pstlist + saut + 1 + ind2+1])
+            dif = inte(LM[pstlist : pstlist + ind +1], FOe[pstlist : pstlist  + ind +1], LM[pstlist + saut + 1: pstlist + saut + 1 + ind2+1], FOe[pstlist + saut + 1: pstlist + saut + 1 + ind2+1])
+            dds = dif/dT
+            c= float(i)
+            ds.append(dds)
+            moytr.append(round(tmoy,1))
+            Tmoy.append(tmoy)
+            champ.append(c)
+            saute.append(saut)
+            tt.append(round(Tb,1))
+            pstL.append(pstlist)
+            fd.write(str(ds[n]) + ',' + str(moytr[n])+ ','+ str(champ[n]) +  ',' + str(Tmoy[n])+ "\n")
+            n+=1
+            pstlist += saut+1
+            Tb += dT
+            #print("Pour une température ",Tb)
+        fd.close()
+        if chx == 's':
+            dsMax = interp1d(ds, moytr,  fill_value='extrapolate')
+            LocMax = dsMax(max(ds))
+            graph =plt.plot(moytr, ds, marker = 's', markersize = 2, linewidth = 2, label = str(i) +'T') 
+            #graph =plt.plot(moytr, ds, marker = 's', markersize = 2, linewidth = 1.5, label = 'Isothermes') 
+            graph[0].set_color(clrs[i])
+            graph[0].set_linestyle(LINE_STYLES[i%NUM_STYLES])
+            #plt.title(r'Variation de $-\Delta$S en fonction de la température du '+crystt+' échantillon '+str(ech)+' à un angle de '+ str(angle)+r'$^{\circ}$ pour différents champs magnétiques',fontsize = font, wrap=True)
+            #plt.title(r'Variation de $-\Delta$S en fonction de la température du '+crystt+' échantillon '+str(ech)+" selon l'axe 118 pour différents champs magnétiques")
+            #print(LocMax/(round(max(moytr),0)+3))
+            #print(LocMax)
+            #print(max(moytr))
+            #plt.axvline(x=15,ymin=0, ymax=max(ds)/5, linewidth= 0.5, color='grey')
+            #plt.axhline(y=max(ds),xmin=0, xmax=LocMax/((round(max(moytr),0))+3), linewidth= 0.5, color='grey')
+        if chx == 'p':
+            dsMax = interp1d(ds, moytr,  fill_value='extrapolate')
+            LocMax = dsMax(max(ds)) 
+            graph = plt.plot(moytr, ds, marker = 's', markersize = 2, linewidth = 1, label = str(i)+'T ,'+str(angle)+'deg' )
+            graph[0].set_color(clrs[i])
+            graph[0].set_linestyle(LINE_STYLES[i%NUM_STYLES])
+            plt.axhline(y=max(ds),xmin=0, xmax=LocMax/((round(max(moytr),0))+3), linewidth= 0.5, color='grey')
+            plt.axvline(x=LocMax,ymin=0, ymax=max(ds)/(max(ds)+0.1), linewidth= 0.5, color='grey')
+            plt.title(r'Variation de $\Delta$ S en fonction de la température (K) du'+ crystt +','+ str(i)+ 'T',fontsize = font, wrap=True)
+        print("À l'angle " , Axe, ' pour le champ de', i,'T, il y a' , n , 'valeur de Delta S')
+        i+= 1
+    #plt.annotate(s=r'(a)', xy=(60,7), xytext=(60,7),fontsize=font2)
+    plt.xlabel(r'Température (K)',fontsize=font) # axe x température
+    plt.axvline(x=min(moytr), linewidth= 0.5, color='grey')
+    plt.ylabel(r'$-\Delta$S$_{M}$ (J/kg K)',fontsize=font) #axe y delta s
+    plt.axhline(y=0, linewidth= 0.5, color='grey')
+    #plt.yticks(np.arange(0, 5.5, 0.5))
+    plt.xticks(np.arange(0, max(moytr)+1, 10))
+    plt.xlim(0,round(max(moytr),0)+3)
+    #plt.ylim(0,round(max(ds),0)+0.1)
+    plt.legend( loc='best',  frameon = True,fontsize = font2)
+    plt.tick_params(axis='both', which='major', labelsize=font)
+    plt.tick_params(axis='both', which='minor', labelsize=font-2)
+    plt.show()      
