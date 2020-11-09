@@ -8,6 +8,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 import sys
 import os.path
+from scipy.interpolate import interp1d
 
 def getColumns(inFile, delim=",", header=True):
     """
@@ -63,39 +64,56 @@ def Calcul_ds(Tpuck, Cv, Cv_er, Hoe):
     Cv1 = []
     Tt = []
     dds= []
-
+    i=0
+    CvInt = interp1d(Tpuck[0][:], Cv[0][:],  fill_value='extrapolate')
+    CvInt2 = interp1d(Tpuck[1][:], Cv[1][:],fill_value='extrapolate')   
     if T1M > T2M:
-        for i in range(len(Tpuck[1])):
+        #for i in range(len(Tpuck[1])):  
+        while Tpuck[0][i] < T2M:         
+            #Tmoy = (Tpuck[0][i]+Tpuck[1][i])/2
+            Tmoy = (Tpuck[0][i])
+            print(Tpuck[0][i])
+            #print(Tpuck[1][i])
+            Cvv1 = CvInt(Tpuck[0][i]) 
+            Cvv2 = CvInt2(Tpuck[0][i])            
+            Cv0.append(Cvv1/Tmoy)
+            Cv1.append(Cvv2/Tmoy)
+            Tt.append(Tmoy)
+            integrale = inter(Tt, Cv0, Cv1)
+            dds.append(integrale)
+            i+=1
+    if T2M > T1M:
+        #for i in range(len(Tpuck[1])):  
+        while Tpuck[1][i] < T1M:         
             #Tmoy = (Tpuck[0][i]+Tpuck[1][i])/2
             Tmoy = (Tpuck[0][i]+Tpuck[1][i])/2
-            #print(Tpuck[0][i])
+            print(Tpuck[0][i])
             #print(Tpuck[1][i])
-            Cv0.append(Cv[0][i]/Tmoy)
-            Cv1.append(Cv[1][i]/Tmoy)
+            Cvv1 = CvInt(Tpuck[0][i]) 
+            Cvv2 = CvInt2(Tpuck[0][i])            
+            Cv0.append(Cvv1/Tmoy)
+            Cv1.append(Cvv2/Tmoy)
             Tt.append(Tmoy)
             integrale = inter(Tt, Cv0, Cv1)
             dds.append(integrale)
-
-    if T2M > T1M:
-        for i in range(len(Tpuck[0])):
-            Tmoy = (Tpuck[0][i]+Tpuck[1][i])/2
-            Cv0.append(Cv[0][i]/Tmoy)
-            Cv1.append(Cv[1][i]/Tmoy)
-            Tt.append(Tmoy)
-            integrale = inter(Tt, Cv0, Cv1)
-            print(Tt)
-            dds.append(integrale)
-               
-    plt.plot(Tt, dds ,linestyle = '-', linewidth=1, marker = 'o', markersize=1, label='5T')
-    #plt.errorbar(TPuck[0], Cv[0], yerr= Cv_er[0], xerr = None, fmt='bo', markersize=0)
-    plt.show()
-    plt.xlabel(r'Température (K)') # axe x température
-    plt.ylabel(r'$-\Delta$ S (J/kg K)') #axe y delta s
-    plt.axvline(x=15, linewidth= 0.5, color='grey')
+            i+=1
+    CvMax = interp1d(dds, Tt,  fill_value='extrapolate') 
+    LocMax = CvMax(max(dds))              
+    plt.plot(Tt, dds ,linestyle = '-', linewidth=1, marker = 'o', markersize=1, label='Chaleur spécifique')
+    plt.errorbar(Tt, dds, yerr= 0.01, xerr = None, fmt='bo', markersize=0)
+    plt.xlabel(r'Température (K)',fontsize=font) # axe x température
+    plt.ylabel(r'$-\Delta$S$_{M}$ (J/kg K)',fontsize=font) #axe y delta s
+    plt.yticks(np.arange(0, 5.2, 0.5))
+    plt.axvline(x=15,ymin=0, ymax=max(dds)/5.2, linewidth= 0.5, linestyle ='-.',color='grey')
+    plt.annotate(s=r'T$_{c}$ attendu', xy=(15.1, 1), xytext=(15.1,1),fontsize=font2)
     plt.axhline(y=0, linewidth= 0.5, color='grey')
-    plt.axhline(y=max(dds),xmin=0,xmax=(15/max(Tt)), linewidth= 0.5, color='grey')
-    #plt.title('Capacité calorifique selon la température, H parallèle à l.axe C')
-    plt.legend( loc='best',  frameon = False)
+    plt.axhline(y=max(dds),xmin=0,xmax=LocMax/83, linewidth= 0.5, linestyle='-.',color='grey')
+    plt.xlim(0,80)  
+    plt.ylim(0,5.2)  
+    plt.tick_params(axis='both', which='major', labelsize=font)
+    plt.title(r"Comparaison de la variation de -$\Delta$ S en fonction de la température (K) du"+ crystt +' échantillon '+ str(echant)+" pour différentes méthodes de mesures.", fontsize = font, wrap=True)
+    plt.legend( loc='best',  frameon = True,fontsize = font2)
+    plt.show()
     
 #Main-------------------------------------------------------------------------    
 def main():
@@ -108,20 +126,24 @@ def main():
         
 #Trucs a definir -------------------------------------------------------------
 
-fpath = 'C:/Users/User/Desktop/EMCR/Data_' #localisation d'ou seront sauvegarder
+fpath = 'C:/Users/Laurier/Desktop/EMCR/02- Data/03-Data_' #localisation d'ou seront sauvegarder
+
+font = 21
+font2 = 15.5
 
 angle = 0
-cristal = 'HoMn2O5'
+cristal = 'TmMnO3'
+crystt = r'TmMnO$_{3}$'
 Axe = '0'
 echant = 'A'
 date = '190913'
-mas = 2 #en mg
+mas = 10 #en mg
 masse = float(mas)*10**-3 #En gramme Très important
-massekg = masse*10**-3
+massekg = masse*10**-3 #Masse en kg
 
-A = 168.93422 
-B = 54.938044 
-C = 15.994 
+A = 168.93422 #(Tm)
+B = 54.938044 #(Mn)
+C = 15.994 #(O)
 Mtotal = A + B + C*3
 mole = masse/Mtotal
 
@@ -131,15 +153,15 @@ Cv_er = [[] for i in range(2)]
 H = [[] for i in range(2)]
 champ = [0,5]
 for j in range(2):
-    Nom = cristal +'_'+ echant +'_Cv_'+ str(mas) +'mg_axe'+ Axe +'_champ_' +str(champ[j]) 
+    Nom = cristal +'_'+ echant +'_Cv_'+ str(mas) +'mg_axe'+ Axe +'_champ_' +str(champ[j]) #Très important de spécifier. 
     print(Nom)
     nom_doc= Nom +'.txt'
-    file = open(os.path.join(fpath+ str(cristal) +'/' + str(echant)+'_PPMS'+ '/' + str(date), Nom+'.txt'), 'r')
+    file = open(os.path.join(fpath+ str(cristal) +'/' + str(echant)+'_PPMS'+ '/' + str(date)+'/'+'03-Cv', Nom+'.txt'), 'r')
     cols, indexToName = getColumns(file)
     file.close()
     print('La colonne Cv de', Nom ,'est d.une longueur de:', len(cols['Puck Temp (Kelvin)'])) 
     TPuck[j] = list(np.float_(cols['Puck Temp (Kelvin)'])) #Colonne 1(0)
-    Cv[j] = list(np.float_(cols['Cv (J/mol*K)'])*mole/massekg) #Cv colonne 2(1)
+    Cv[j] = list(np.float_(cols['Cv (J/mol*K)'])) #Cv colonne 2(1)
     Cv_er[j] = list(np.float_(cols['Cv Err (J/mol*K)'])) #Erreur sur Cv colonne 3(2)
     H[j] = list(np.float_(cols['Field (Oersted)'])) #H colonne 4(3)
 
