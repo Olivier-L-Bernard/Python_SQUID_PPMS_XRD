@@ -1,0 +1,102 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Jul 30 09:55:10 2020
+
+@author: Laurier
+"""
+
+
+import numpy as np
+from matplotlib import pyplot as plt
+#import math
+import os.path
+#from scipy.interpolate import interp1d
+import seaborn as sns
+from matplotlib.legend import Legend
+#----------------------------------------------------------------------------
+from _Fonctions_v2 import getColumns
+
+fpath = 'C:/Users/Laurier/Desktop/EMCR/02- Data/03-Data_'
+
+cryst = 'TmMnO3' #{'HoMn2O5', 'TbMn2O5', 'TmMnO3', 'YbMn2O5, 'YbMnO3'}
+crystt = r'TmMnO$_{3}$'
+date =  190906#(AAMMJJ) 190705 190906
+echantillon = 'A' #Lettre ou numeros...
+mm = 10 #{27.7, 8.32, 15.7, 1.5, 10} masse en mg
+
+prefix = '_'+ str(echantillon)+'_MCE_'+ str(mm) +'mg_Holder'
+name = str(cryst) + prefix + '_axe'  #nom du doc sans le .txt ni l'angle
+masse = float(mm)*(10**-3) #masse en g
+
+axis = [0,90]
+chp= np.concatenate((np.arange(0,1,0.1),np.arange(1,3,0.2),np.arange(3,7.5,0.5)),axis= None) #Champ magnetique mesurer
+
+Field = [[] for i in range(len(axis))]
+Temperature = [[] for i in range(len(axis))]
+Moment = [[] for i in range(len(axis))]
+FOe= [[] for i in range(len(axis))]
+Tem = [[] for i in range(len(axis))]
+Mom = [[] for i in range(len(axis))]
+i=0
+for axeu in axis:
+    file = open(os.path.join(fpath+ str(cryst) +'/' + str(echantillon)+ '/' + str(date), name+ str(axeu)+'.txt'), 'r')
+    cols, indexToName = getColumns(file)
+    file.close()
+    Moment[i] = list(np.float_(cols['Long Moment (emu)'])/masse)
+    Field[i] = list(np.float_(cols['Field (Oe)'])/10000)
+    Temperature[i] = list(np.float_(cols['Temperature (K)']))
+    print(len(Moment[i]),len(Field[i]),len(Temperature[i]))  
+    FOe= [[] for j in range(int(len(Moment[i])/len(chp)))]
+    Mom = [[] for j in range(int(len(Moment[i])/len(chp)))]
+    Tem = []
+    lgchp= len(chp)
+    print(int(len(Moment[i])/len(chp)))
+    for pos in range(int(len(Moment[i])/len(chp))):
+        FOe[pos].append(Field[i][pos*lgchp:pos*lgchp+lgchp])
+        Mom[pos].append(Moment[i][pos*lgchp:pos*lgchp+lgchp])
+        Tem.append(round(sum(Temperature[i][pos*lgchp:pos*lgchp+lgchp])/len(chp),1))
+        #Tem.append(pos)
+        
+    jj=0
+    NUM_COLORS = len(Tem)
+    LINE_STYLES = ['solid', 'dashed', 'dashdot', 'dotted']
+    NUM_STYLES = len(LINE_STYLES)
+    sns.reset_orig()  # get default matplotlib styles back
+    clrs = sns.color_palette('husl', n_colors=NUM_COLORS)  # a list of RGB tuples
+    for temperat in Tem:
+        print(temperat)
+        #print(FOe[jj][0])
+        graph=plt.plot(FOe[jj][0], Mom[jj][0], linewidth=1 ,linestyle='-',label= str(Tem[jj])+'K')
+        graph[0].set_color(clrs[jj])
+        graph[0].set_linestyle(LINE_STYLES[jj%NUM_STYLES])
+        jj+=1
+    i+=1
+font = 10
+font2 = 10
+handles, labels = plt.gca().get_legend_handles_labels()
+plt.xlim(0,7.5)    
+plt.ylim(0,110)
+by_label = dict(zip(labels, handles))
+plt.legend(by_label.values(), by_label.keys(),loc='upper left', ncol=3, fontsize=font2, frameon = True )
+yfls =104.88
+ytsx = yfls+0.013*yfls
+plt.annotate(s='', xy=(7.1, yfls), xytext=(7.1,32.9), arrowprops=dict(arrowstyle='<->'))
+plt.annotate(s='Axe facile', xy=(6.545,ytsx), xytext=(6.545,ytsx),fontsize=font2)
+#plt.annotate(s='2K', xy=(7.18,123), xytext=(7.2,123),fontsize=font2)
+#plt.annotate(s='82K', xy=(7.15,41.7), xytext=(7.15,41.7),fontsize=font2)
+yfleche = 16.6
+yltxt= 12.76
+plt.annotate(s='', xy=(7.1,yfleche), xytext=(7.1,yltxt), arrowprops=dict(arrowstyle='<->'))
+ytxt = yltxt-0.2*yfleche
+#plt.annotate(s='Axe facile', xy=(6.65,16.43), xytext=(6.65,16.43))
+plt.annotate(s='Axe difficile', xy=(6.545,ytxt), xytext=(6.5450,ytxt),fontsize=font2) 
+#plt.annotate(s='2K', xy=(7.18,32.5), xytext=(7.18,32.5),fontsize=font2)
+#plt.annotate(s='82K', xy=(7.15,20), xytext=(7.15,20),fontsize=font2)
+     
+plt.title(r"Aimantation en fonction du champ magnétique du " + str(crystt)+ " échantillon "+ str(echantillon)+ " selon les deux axes cristallin pour une température variant de "+str(min(Tem))+'K à ' +str(max(Tem)) +"K.",fontsize = font,wrap=True)
+plt.xlabel(r'$\mu_{0}$H (Tesla)',fontsize = font) # axe x température
+plt.ylabel(r'Aimantation (Am$^{2}$/kg)',fontsize = font) #axe y delta s 
+plt.tick_params(axis='both', which='major', labelsize=font)
+plt.tick_params(axis='both', which='minor', labelsize=font-2) 
+plt.show()
+    
