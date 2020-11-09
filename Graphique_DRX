@@ -1,0 +1,46 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Oct 21 08:40:58 2020
+
+@author: Laurier
+"""
+
+import numpy as np
+from matplotlib import pyplot as plt
+import math
+import os.path
+from scipy.interpolate import interp1d
+import seaborn as sns
+#----------------------------------------------------------------------------
+from _Fonctions_v2 import getColumns
+fpath = 'C:/Users/Laurier/Desktop/EMCR/02- Data/03-Data_'
+
+cryst = 'TmMnO3' #{'HoMn2O5', 'TbMn2O5', 'TmMnO3', 'YbMn2O5, 'YbMnO3'}
+date =  201020 #(AAMMJJ) 190705 190906
+echantillon = 'A' #Lettre ou numeros...
+mm = 10#{27.7, 8.32, 15.7, 1.5, 10} masse en mg
+pref= str(cryst)+'_' +str(echantillon) +'_'
+xlabel =[r'Angle ($\theta^{\circ}$)',r'2$\theta$ (deg)']
+font = 21
+font2 = 15.5
+scantype =['PhiScan','Theta2Theta']
+axise = '118' # '006' '108'
+i=0
+
+file = open(os.path.join(fpath+ str(cryst) +'/' + str(echantillon)+ '/' + str(date), pref+ str(scantype[i]) + '_'+str(axise) +'.dat'), 'r')
+var = np.loadtxt(os.path.join(fpath+ str(cryst) +'/' + str(echantillon)+ '/' + str(date), pref+ str(scantype[i]) + '_'+str(axise) +'.dat'),  skiprows= 1)
+file.close()
+
+plt.plot(var[:,0],var[:,1],linewidth=1.5)
+plt.xlim(min(var[:,0]),max(var[:,0]))
+plt.tick_params(axis='both', which='major', labelsize=font)
+plt.tick_params(axis='both', which='minor', labelsize=font-2)
+plt.axvline(x=-30, linewidth= 0.5, color='grey')
+plt.axvline(x=30, linewidth= 0.5, color='grey')
+plt.axvline(x=73.38, linewidth= 0.5, color='grey')
+if i==1:
+    plt.xticks(np.arange(min(var[:,0]),max(var[:,0])+1,1))  
+plt.yscale('log')
+plt.ylabel(r'Intensité (u.a.)',fontsize=font)
+plt.xlabel(xlabel[i],fontsize=font)
+plt.show()
