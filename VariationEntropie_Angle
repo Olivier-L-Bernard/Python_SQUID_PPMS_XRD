@@ -8,10 +8,14 @@ Created on Tue May 28 15:23:58 2019
 import numpy as np
 from matplotlib import pyplot as plt
 import os.path
-
+import seaborn as sns
 #Ouverture du fichier et definition des limites-------------------------------
-def trace_dsVSang(masse, angle_min, angle_max, pas_angle, temp, doc, cryst, champ, ech, fpath, date): 
-    
+def trace_dsVSang(masse, angle_min, angle_max, pas_angle, temp, doc, cryst, champ, ech, fpath, date,i,crystt): 
+    NUM_COLORS = 40
+    LINE_STYLES = ['solid', 'dashed', 'dashdot', 'dotted',(0,(3,5,1,5,1,5)),(0,(5,10)),(0,(3,1,1,1))]
+    NUM_STYLES = len(LINE_STYLES)
+    sns.reset_orig()  # get default matplotlib styles back
+    clrs = sns.color_palette('husl', n_colors=NUM_COLORS)  # a list of RGB tuples  
     angly = []
     dsy = []
     print(fpath+ str(cryst) +'/' + str(ech)+ '/' + str(date), doc +'(dSvsA)'+ str(temp) +'K'+ str(champ)+ 'T')
@@ -31,9 +35,15 @@ def trace_dsVSang(masse, angle_min, angle_max, pas_angle, temp, doc, cryst, cham
         angly.append(ang)
         dsy.append(var[index_temp,0])
     fd.close()
-    plt.plot(angly, dsy, label= str(temp) +'K')
-    plt.legend( loc='best',  frameon = True)
-    plt.xlabel(r'Angle $\theta$') # axe x angle
-    plt.ylabel(r'$-\Delta$ S (J/kg K)') #axe y delta s
-    plt.title(r'Variation de $\Delta$s en fonction de $\theta$ du '+str(cryst)+' a '+str(champ)+'T')
+    font = 21
+    font2 = 15.5
+    graph = plt.plot(angly, dsy, label= str(temp) +'K')
+    graph[0].set_color(clrs[i])
+    graph[0].set_linestyle(LINE_STYLES[i%NUM_STYLES])
+    plt.xlim(angle_min, angle_max)
+    plt.tick_params(axis='both', which='major', labelsize=font)
+    plt.legend( loc='best', ncol=3, frameon = True, fontsize = font2-2)
+    plt.xlabel(r'Angle ($\theta^{\circ}$)',fontsize=font) # axe x angle
+    plt.ylabel(r'$-\Delta$S$_{M}$ (J/kg K)',fontsize=font) #axe y delta s
+    #plt.title(r'Variation de $-\Delta$S en fonction de $\theta$ du '+str(crystt)+' échantillon ' + str(ech) + ' pour un champ magnétique de  '+str(champ)+'T pour une température variant de 2.5K a ' + str(temp)+'K',fontsize = font,wrap=True)
     print('Le champ est de ', str(champ), 'T')
