@@ -1,0 +1,173 @@
+# -*- coding: utf-8 -*-
+"""
+
+Created on Tue Sep 17 11:26:45 2019
+
+@author: Laurier
+"""
+ 
+import numpy as np
+from matplotlib import pyplot as plt
+import sys
+import os.path
+import seaborn as sns
+import itertools
+
+
+def getColumns(inFile, delim=",", header=True):
+    """
+    Get columns of data from inFile. The order of the rows is respected
+    :param inFile: column file separated by delim
+    :param header: if True the first line will be considered a header line
+    :returns: a tuple of 2 dicts (cols, indexToName). cols dict has keys that 
+    are headings in the inFile, and values are a list of all the entries in that
+    column. indexToName dict maps column index to names that are used as keys in 
+    the cols dict. The names are the same as the headings used in inFile. If
+    header is False, then column indices (starting from 0) are used for the 
+    heading names (i.e. the keys in the cols dict)
+    """
+    cols = {} 
+    indexToName = {}
+    for lineNum, line in enumerate(inFile):
+        #notete = input('Combien de ligne fait len-tête :')
+        notete = 0
+        if lineNum == notete:
+            headings = line.split(delim)
+            i = 0
+            for heading in headings:
+                heading = heading.strip()
+                if header:
+                    cols[heading] = []
+                    indexToName[i] = heading
+                else:
+                    # in this case the heading is actually just a cell
+                    cols[i] = [heading]
+                    indexToName[i] = i
+                i += 1
+        else:
+            cells = line.split(delim)
+            i = 0
+            for cell in cells:
+                cell = cell.strip()
+                cols[indexToName[i]] += [cell]
+                i += 1              
+    return cols, indexToName
+
+#Trace_graph-------------------------------------------------------------------
+    
+def Trace_Cv(Tpuck, Cv, Cv_er, Hoe):
+    figure = plt.figure()  
+    axes = figure.add_axes([0.08,0.08,0.9,0.83])
+    axes2 = figure.add_axes([0.55,0.15,0.41,0.45])
+    NUM_COLORS = (3)
+    LINE_STYLES = ['solid', 'dashed', 'dashdot', 'dotted',(0,(3,5,1,5,1,5)),(0,(5,10)),(0,(3,1,1,1))]
+    NUM_STYLES = len(LINE_STYLES)
+    sns.reset_orig()  # get default matplotlib styles back
+    clrs = sns.color_palette('husl', n_colors=NUM_COLORS)  # a list of RGB tuples
+    x = [[] for i in range(6)] # x0 à x2T puck, Cv, Cv_er pour premier champ mag x3 à x5 pour second champ
+    fd=open(os.path.join(fpath+ str(cristal) +'/' + str(echant)+'_PPMS'+ '/' + str(date)+'/'+'03-Cv', cristal +'_'+ echant +'_' +'Cv_'+ str(mas) +'mg' +'_axe'+ Axe +  '_champ_' + '0' + '.txt'), "w")
+    fd.write(str('Puck Temp (Kelvin)') + "," + str('Cv (J/mol*K)') + ","+str('Cv Err (J/mol*K)')+ ","+ str('Field (Oersted)') + "\n")
+    fd2=open(os.path.join(fpath+ str(cristal) +'/' + str(echant) +'_PPMS' + '/' + str(date)+'/'+'03-Cv', cristal +'_'+ echant +'_' +'Cv_'+ str(mas) +'mg' +'_axe'+ Axe + '_champ_' + '5' + '.txt'), "w")
+    fd2.write(str('Puck Temp (Kelvin)') + "," + str('Cv (J/mol*K)') + ","+str('Cv Err (J/mol*K)')+ ","+ str('Field (Oersted)') + "\n")
+    for i in range(len(Tpuck)):
+        if Hoe[i] < max(Hoe)-10000:
+            x[0].append(float(Tpuck[i]))#428 303
+            x[1].append(float(Cv[i]))
+            x[2].append(float(Cv_er[i]))
+
+        if Hoe[i] > min(Hoe)+10000:
+            x[3].append(float(Tpuck[i]))
+            x[4].append(float(Cv[i]))
+            x[5].append(float(Cv_er[i]))
+    lists = sorted(zip(*[x[0], x[1],x[2]]))
+    new_x, new_y ,new_error = list(zip(*lists))
+    x[0] = new_x
+    x[1] = new_y
+    x[2] = new_error
+                
+    for i in range(len(x[0])):
+       fd.write(str(x[0][i]) + "," + str(x[1][i]) + ","+str(x[2][i])+ ","+ str(0.66) + "\n")
+    for i in range(len(x[3])):
+       fd2.write(str(x[3][i]) + "," + str(x[4][i]) + ","+ str(x[5][i])+ ","+ str(5) + "\n")
+    fd.close()
+    fd2.close()  
+    lwidthl=1.5         
+    graph= axes.plot(x[0], x[1] ,linewidth=lwidthl, markersize=1, label = 'Champ magnétique nul')
+    graph[0].set_color(clrs[0])
+    graph[0].set_linestyle(LINE_STYLES[0%NUM_STYLES])
+    axes.errorbar(x[0], x[1], yerr= x[2], xerr = None,fmt='none',  ecolor= clrs[2] ,markersize=0)
+    graph3 = axes.plot(x[3], x[4], linewidth=lwidthl, markersize=1, label ='Champ magnétique de 5T')
+    graph3[0].set_color(clrs[1])
+    graph3[0].set_linestyle(LINE_STYLES[3%NUM_STYLES])
+    axes.errorbar(x[3], x[4], yerr= x[5], xerr = None, fmt='none', ecolor= clrs[2], markersize=0)
+    graph5= axes2.plot(x[0], x[1], linewidth =lwidthl, markersize=1, label = 'Champ magnétique nul')
+    graph5[0].set_color(clrs[0])
+    graph5[0].set_linestyle(LINE_STYLES[0%NUM_STYLES])
+    axes2.errorbar(x[0], x[1], yerr= x[2], xerr = None, fmt='none', ecolor= clrs[2], markersize=0)
+    graph7 = axes2.plot(x[3], x[4],linewidth=lwidthl, markersize=1, label ='Champ magnétique de 5T')
+    graph7[0].set_color(clrs[1])
+    graph7[0].set_linestyle(LINE_STYLES[3%NUM_STYLES])
+    axes2.errorbar(x[3], x[4], yerr= x[5], xerr = None, fmt='none', ecolor= clrs[2], markersize=0)
+    axes2.set_xlim(0,70)    
+    #axes2.set_ylim(0,42)
+    axes2.set_ylim(0,150)
+    axes.set_xlim(0,301)    
+    #axes.set_ylim(0,115) 
+    axes.set_ylim(0,425)
+    axes.tick_params(axis='both', which='major', labelsize=font)
+    axes2.tick_params(axis='both', which='major', labelsize=font2)
+    axes.set_xlabel('Température (K)',fontsize=font)
+    axes.set_ylabel('Cv (J/kg K)',fontsize=font)
+    #axes.set_title("Chaleur spécifique selon la température du "+ str(cristt)+" échantillon "+str(echant)+". Le champ magnétique H est parallèle à l'axe C", fontsize = font, wrap=True)
+    axes.legend( loc='best',  frameon = True,fontsize = font2)
+    plt.show()
+    
+#Main-------------------------------------------------------------------------    
+def main():
+    #commande = input('Que voulez-vous faire (e = ecriture de document ;d = difference entropie ; r= rien )?:')
+    commande ='e'
+    if (commande == 'E' or commande == 'e' ) :
+        Trace_Cv(TPuck, Cv, Cv_er,Hoe) 
+    if (commande == 'R' or commande == 'r'):
+        sys.exit()
+        
+#Trucs a definir -------------------------------------------------------------
+
+fpath = 'C:/Users/Laurier/Desktop/EMCR/02- Data/03-Data_' #localisation d'ou seront sauvegarder
+
+font = 21
+font2 = 15.5
+
+angle = 0
+cristal = 'TmMnO3'
+cristt = r'TmMnO$_{3}$'
+Axe = '0'
+echant = 'A'
+date = '190913'
+
+mas = 10 #mg
+Nom = cristal +'_'+ echant +'_' +'Hc_'+ str(mas) +'mg' +'_axe'+ Axe #Très important de spécifier. 
+print(Nom)
+masse = float(mas)*10**-3 #En gramme Très important
+
+Tm = 168.93422 #Gramme par mole
+Mn = 54.938044 #Gramme par mole
+O = 15.994 #Gramme par mole
+Mtotal = Tm + Mn + O*3
+print(masse)
+mole = masse/Mtotal
+print(mole,'Mole')
+nom_doc= Nom +'.txt'
+file = open(os.path.join(fpath+ str(cristal) +'/' + str(echant)+'_PPMS'+ '/' + str(date), Nom+'.txt'), 'r')
+cols, indexToName = getColumns(file)
+file.close()
+print('La colonne temps de', Nom ,'est d.une longueur de:', len(cols['Time Stamp (Seconds)'])) 
+
+TPuck = list(np.float_(cols['Puck Temp (Kelvin)'])) #Colonne 3(2)
+TSys = list(np.float_(cols['System Temp (Kelvin)'])) #Colonne 4(3)
+Hoe = list(np.float_(cols['Field (Oersted)'])) #Champ mag en oe convertit en Tesla colonne 5(4)
+Cv = list(np.float_(cols['Samp HC (µJ/K)'])*10**-3/masse) #Cv total colonne 09(08)
+Cv_er = list(np.float_(cols['Samp HC Err (µJ/K)'])*10**-3/masse) #Erreur sur Cv colonne 10(09)
+T2 = list(np.float_(cols['Temp Squared (K^2)'])) #T au carré colonne 27(26)
+CvT = list(np.float_(cols['Samp HC/Temp (µJ/K/K)'])*10**-3/masse) #Cv/T colonne 28(27)
+main()
