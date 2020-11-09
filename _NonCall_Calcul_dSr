@@ -1,0 +1,71 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Oct 20 08:43:10 2020
+
+@author: Laurier
+"""
+
+import numpy as np
+from matplotlib import pyplot as plt
+import math
+import os.path
+from scipy.interpolate import interp1d
+import seaborn as sns
+#----------------------------------------------------------------------------
+from _Fonctions_v2 import getColumns
+
+fpath = 'C:/Users/Laurier/Desktop/EMCR/02- Data/03-Data_'
+
+cryst = 'TmMnO3' #{'HoMn2O5', 'TbMn2O5', 'TmMnO3', 'YbMn2O5, 'YbMnO3'}
+
+date =  190906 #(AAMMJJ) 190705 190906
+echantillon = 'A' #Lettre ou numeros...
+mm = 10#{27.7, 8.32, 15.7, 1.5, 10} masse en mg
+font = 21
+font2 = 15.5
+
+angles=[(0,10),(0,20),(0,30),(0,40),(0,50),(0,60),(0,70),(0,80),(0,90)]
+
+pref= str(cryst)+'_' +str(echantillon)+'_MCE_'+ str(mm)+'mg_Holder_axe'
+suffixe = '_ds_champ_5'
+
+dsr= [[] for i in range(9)] 
+tempsdsr = [[] for i in range(9)] 
+j=0
+
+NUM_COLORS = 9
+LINE_STYLES = [ 'dashed', 'dashdot', 'dotted',(0,(3,5,1,5,1,5)),(0,(5,10)),(0,(3,1,1,1))]
+MARKER_STYLES = ['s', '>', 'o','x']
+NUM_STYLES = len(LINE_STYLES)
+NUM_STYLES2 = len(MARKER_STYLES)
+sns.reset_orig()  # get default matplotlib styles back
+clrs = sns.color_palette('husl', n_colors=NUM_COLORS)  # a list of RGB tuples
+
+for angi, angf in angles:
+    print('Mouvement de',angi,'a',angf)
+    file = open(os.path.join(fpath+ str(cryst) +'/' + str(echantillon)+ '/' + str(date), pref+ str(angi) + suffixe +'.txt'), 'r')
+    var = np.loadtxt(os.path.join(fpath+ str(cryst) +'/' + str(echantillon)+ '/' + str(date), pref+ str(angi) + suffixe +'.txt'),  delimiter = ',' , skiprows= 1)
+    file.close()
+    file2 = open(os.path.join(fpath+ str(cryst) +'/' + str(echantillon)+ '/' + str(date), pref+ str(angf) + suffixe +'.txt'), 'r')
+    var2 = np.loadtxt(os.path.join(fpath+ str(cryst) +'/' + str(echantillon)+ '/' + str(date), pref+ str(angf) + suffixe +'.txt'),  delimiter = ',' , skiprows= 1)
+    file2.close()
+    for k in range(len(var[:,1])):
+        dsrc = var[:,0][k] -var2[:,0][k]
+        dsr[j].append(dsrc)
+        #print(var[:,1][k], var2[:,1][k])
+        tempsdsr[j].append(var[:,1][k])
+    #print(dsr[j],tempsdsr[j])
+    graph = plt.plot(tempsdsr[j],dsr[j], marker = 's', markersize = 2, linewidth = 1.5,label = r"Mouvement de "+str(angi)+"$^{\circ}$ à "+str(angf)+"$^{\circ}$")
+    graph[0].set_color(clrs[j])
+    graph[0].set_linestyle(LINE_STYLES[j%NUM_STYLES])
+    graph[0].set_marker(MARKER_STYLES[j%NUM_STYLES2])
+    j+=1
+plt.legend( loc='best',  frameon = True,fontsize = font2)
+plt.tick_params(axis='both', which='major', labelsize=font)
+plt.tick_params(axis='both', which='minor', labelsize=font-2)
+plt.axhline(y=0, linewidth= 0.5, color='grey')
+plt.axvline(x=min(var[:,1]), linewidth= 0.5, color='grey')
+plt.ylabel(r'-$\Delta$S$_{R}$ (J/kg K)',fontsize=font)
+plt.xlabel(r'Température (K)',fontsize=font)
+plt.show()
+    
