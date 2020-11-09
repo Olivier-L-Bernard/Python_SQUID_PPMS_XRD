@@ -1,0 +1,121 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Jul  7 11:01:09 2020
+
+@author: Laurier
+Calcul la suceptibilité en EMU car nous avons besoin de M en EMU pour comparer avec les mesures
+"""
+
+from matplotlib import pyplot as plt
+import numpy as np
+import os.path
+from _Fonctions_v2 import getColumns
+from scipy.interpolate import interp1d
+import seaborn as sns
+
+fpath = 'C:/Users/Laurier/Desktop/EMCR/02- Data/03-Data_'
+
+cryst = 'TmMnO3' #{'HoMn2O5', 'TbMn2O5', 'TmMnO3', 'YbMn2O5, 'YbMnO3'}
+crystt =  r'TmMnO$_{3}$' # r'TmMnO$_{3}$' r'HoMn$_{2}$O$_{5}$'
+date =  190906 #(AAMMJJ) 190705 190906
+echantillon = 'A' #Lettre ou numeros...
+mm = 10 #{27.7, 8.32, 15.7, 1.5, 10} masse en mg
+
+axis = [0,90]
+
+masse = float(mm)*(10**-3) #masse en g
+print('La masse est de', masse ,'g')
+
+prefix = '_'+ str(echantillon)+'_MCE_'+ str(mm) +'mg_Holder'
+name = str(cryst) + prefix + '_axe'  #nom du doc sans le .txt ni l'angle
+
+champ = 0.1 #Champ magnétique à étudier
+nb_champ = 'all' #'one' ou 'all'
+
+if nb_champ == 'all':
+    chp= np.concatenate((np.arange(0,1,0.1),np.arange(1,3,0.2),np.arange(3,7.5,0.5)),axis= None) #Champ magnetique mesurer
+    champmag = [round(num, 2) for num in chp]
+if nb_champ == 'one':
+    champmag = [champ]
+    
+    
+NUM_COLORS = len(champmag)*2 #34 2
+LINE_STYLES = ['solid', 'dashed', 'dashdot', 'dotted',(0,(3,5,1,5,1,5)),(0,(5,10)),(0,(3,1,1,1))]
+MARKER_STYLES = ['s', '>', 'o','d','*']
+NUM_MARK = len(MARKER_STYLES)
+NUM_STYLES = len(LINE_STYLES)
+sns.reset_orig()  # get default matplotlib styles back
+clrs = sns.color_palette('husl', n_colors=NUM_COLORS)  # a list of RGB tuples
+font = 21
+font2 = 15.5
+k=0
+kk=0
+for champ in champmag:
+    T = [[] for v in range(len(axis))]  
+    M = [[] for v in range(len(axis))] 
+    chi = [[] for v in range(len(axis))]  
+    j=0
+    for axes in axis:
+        file = open(os.path.join(fpath+ str(cryst) +'/' + str(echantillon)+ '/' + str(date), name+ str(axes)+'.txt'), 'r')
+        cols, indexToName = getColumns(file)
+        file.close()
+        Tk = list(np.float_(cols['Temperature (K)']))
+        LM = list(np.float_(cols['Long Moment (emu)'])/masse) #Division par masse pour avoir M
+        FOe = list(np.float_(cols['Field (Oe)'])/10000) #Division par 10k pour avoir H en Tesla
+        fd=open(os.path.join(fpath+ str(cryst) +'/' + str(echantillon)+ '/' + str(date)+'/'+str('03-Susceptibilite'),'Susceptibilite_'+ name+ str(axes)+'_'+str(champ)+'T.txt'), "w")
+        fd.write('Time'+','+'Temperature (K)'+','+'Susceptibility' +','+'Angle (deg)'+','+'Field (T)'+','+'Long Moment (emu)'+"\n")
+        i=0
+        while i < len(LM):
+            if FOe[i] == champ:
+                T[j].append(Tk[i])
+                M[j].append(LM[i])
+                chi[j].append((LM[i]/float(champ)))
+            i+=1
+        for l in range(len(T[j])):
+            fd.write(str(0) +','+str(T[j][l]) +','+ str(chi[j][l]) +','+str(axes)+','+str(champ)+','+str(M[j][l])+"\n")
+        #print('Axe: ' + str(axes))
+        #graph= plt.plot(T[j],chi[j], markersize = 3.5,label = "Susceptibilité à "+str(axes)+r'$^{\circ}$')
+        #graph= plt.plot(T[j],chi[j], markersize = 3.5,label = r"1/$\chi$ pour une orientation de "+str(axes)+r'$^{\circ}$')
+        graph= plt.plot(T[j],chi[j], markersize = 3.5, label = str(champ)+r'T')
+        print("Nb de donnee pour l'axe " + str(axes)+': '+ str(len(T[j]))+ ' champ magnétique '+ str(champ)+ 'T')
+        graph[0].set_color(clrs[k])
+        graph[0].set_linestyle(LINE_STYLES[kk%NUM_STYLES])
+        graph[0].set_marker(MARKER_STYLES[kk%NUM_MARK])
+        #marker ='>', markersize = 3,
+        j+=1
+        kk+=1
+        k+=1
+    fd.close()
+
+if nb_champ == 'all' :
+    #plt.title(r'Variation de $\chi$ en fonction de la température (K) du '+ crystt +' échantillon '+ str(echantillon)+' pour des champs magnétique variant de '+ str(min(champmag))+ 'T a ' + str(max(champmag))+'T',fontsize = font,wrap=True)
+    handles, labels = plt.gca().get_legend_handles_labels()
+    by_label = dict(zip(labels, handles))
+    plt.legend( by_label.values(), by_label.keys(),loc='best',ncol=2, frameon = True,fontsize = font2-2)
+    #plt.annotate(r'7T',(83,0.359),fontsize = font2)
+    #plt.annotate(r'0.1T',(81.5,0.3),fontsize = font2)
+    #plt.annotate(r'7T',(83,0.175),fontsize = font2)
+    #plt.annotate(r'0.1T',(81.5,0.15),fontsize = font2)
+    #plt.annotate(s='', xy=(83,0.356), xytext=(83,0.33), arrowprops=dict(arrowstyle='<->'))
+    #plt.annotate(s='', xy=(83,0.173), xytext=(83,0.16), arrowprops=dict(arrowstyle='<->'))
+    plt.annotate(r'Axe difficile',(30,5.28),fontsize = font2)
+    plt.annotate(r'Axe facile',(30,17.5),fontsize = font2)
+    
+if nb_champ == 'one':
+    #plt.title(r'Variation de $\chi$  en fonction de la température (K) du '+ crystt +' pour un champ magnétique de '+ str(champ)+ 'T.',fontsize = font,wrap=True)
+    #plt.annotate(r'Axe difficile',(70,2.15),fontsize = font2)
+    #plt.annotate(r'Axe facile',(70,5.75),fontsize = font2)
+    #plt.annotate(s='', xy=(67,0.2675), xytext=(67,0.166), arrowprops=dict(arrowstyle='<->'))
+    #plt.annotate(s='', xy=(67,0.1195), xytext=(67,0.094), arrowprops=dict(arrowstyle='<->'))
+    handles, labels = plt.gca().get_legend_handles_labels()
+    by_label = dict(zip(labels, handles))
+    #plt.legend(by_label.values(), by_label.keys(), loc='best', ncol=1, frameon = True,fontsize = font2-2) 
+#plt.xlim(0,85)
+#plt.xlim(0,max(Tk)+3)
+#plt.ylim(0.01,0.4)#65 27
+#plt.yticks(np.arange(1,20,2)) #np.arange(0,66, 5))
+plt.tick_params(axis='both', which='major', labelsize=font)
+plt.xlabel(r'Température (K)',fontsize=font) # axe x température
+plt.ylabel(r'$\chi$ (Am$^{2}$/kg T)',fontsize=font) #axe y delta s  
+#plt.ylabel(r'1/$\chi$ (T/m$^{2}$/kg)',fontsize=font) #axe y delta s  
+plt.show()
