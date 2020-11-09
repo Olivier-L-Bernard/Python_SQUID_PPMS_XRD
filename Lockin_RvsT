@@ -4,6 +4,8 @@ import sys
 from slave.transport import Visa
 from slave.keithley import k2182
 from slave.srs import sr850
+# from slave.keithley import k6221
+# from slave.quantum_design import ppms
 
 import PyQDInstrument as pqi
 
@@ -13,10 +15,12 @@ import numpy as np
 
 from os import path
 
-Visa('GPIB::19').clear()
-Visa('GPIB::11').clear()
+#Visa('GPIB::19').clear()
+Visa('GPIB::18').clear() #Keitlhey
+#Visa('GPIB::11').clear()
 
-KV = k2182.K2182(Visa('GPIB::19'))
+#KV = k2182.K2182(Visa('GPIB::19'))#HP
+KV = k2182.K2182(Visa('GPIB::18')) #Keitlhey
 lockin = sr850.SR850(Visa('GPIB::8'))
 
 KV.sense.auto_range = True
@@ -24,16 +28,17 @@ KV.sense.auto_range = True
 applied_voltage = 1
 external_resistance = 1e6
 
+sensitivity = 10e-3
+
 lockin.reference_mode = 'internal'
 lockin.amplitude = 1
 lockin.phase = 0
 lockin.input = 'A-B'
 lockin.ch1_display = 'r'
-lockin.sensitivity = 10e-3
+lockin.sensitivity = sensitivity
 
 # lockin.filter_slope = 24
 # lockin.sync_filter = True
-
 # lockin.time_constant = 0.3
 
 PPMS = pqi.PPMS('127.0.0.1', 11000)
@@ -61,16 +66,17 @@ column_units = [cnu[1] for cnu in column_names_units]
 
 def to_do():
 
-    frequencies = [100,500,1000]
-    wait_times = [60,1,1]
-    number_of_measurements = [10,10,10]
+    frequency_sensitivity_list = [(1000,2e-3),(1000,5e-3),(1000,10e-3),(500,2e-3),(500,5e-3),(500,10e-3),(100,2e-3),(100,5e-3),(100,10e-3)]
+    #frequency_sensitivity_list = [(1000,2e-3),(1000,5e-3),(1000,10e-3),(100,5e-3),(100,10e-3)]
+    wait_times = [30,1,1,1,1,1,1,1,1]
+    number_of_measurements = [10,10,10,10,10,10,10,10,10]
     data_files = list()
-    for frequency in frequencies:
-        data_file = Writer(path.join(data_path,f'test_freq_{frequency:.0f}_Hz.txt'))
+    for (frequency,sensitivity) in frequency_sensitivity_list:
+        data_file = Writer(path.join(data_path,f'test_freq_{frequency:.0f}_Hz_sense_{sensitivity*1e3:0.0f}_mV.txt'))
         data_file.write_header(column_names,column_units)
         data_files.append(data_file)
 
-    measurement_fct = lambda t0,i : measure_many_frequencies(frequencies,wait_times,number_of_measurements,data_files,t0,i)
+    measurement_fct = lambda t0,i : measure_many_frequency_sensitivity_combo(frequency_sensitivity_list,wait_times,number_of_measurements,data_files,t0,i)
 
     temperatures = np.logspace(np.log10(2),np.log10(300),100)
     
@@ -78,7 +84,6 @@ def to_do():
 
     for data_file in data_files:
         data_file.close()
-
 
 def step_by_step_temperature(temperatures,temperature_rate,measurement_fct,initial_temperature = True):
 
@@ -100,13 +105,17 @@ def step_by_step_temperature(temperatures,temperature_rate,measurement_fct,initi
         
     return None
 
-def measure_many_frequencies(frequencies,wait_times,number_of_measurements,data_files,t0,i):
+def measure_many_frequency_sensitivity_combo(frequency_sensitivity_list,wait_times,number_of_measurements,data_files,t0,i):
 
-    for (frequency,wait_time,number_of_measurement,data_file) in zip(frequencies,wait_times,number_of_measurements,data_files):
+    for (frequency_sentity,wait_time,number_of_measurement,data_file) in zip(frequency_sensitivity_list,wait_times,number_of_measurements,data_files):
+
+        frequency,sensitivity = frequency_sentity
 
         lockin.frequency = frequency
+        lockin.sensitivity = sensitivity
 
         print(f'Applying {frequency:.2e} Hz')
+        print(f'At a sensitivity of {sensitivity:.2e} mV')
         print(f'Waiting to {wait_time} s')
         time.sleep(wait_time)
 
