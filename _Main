@@ -1,0 +1,98 @@
+# -*- coding: utf-8 -*-
+"""
+Auteur: Olivier Bernard
+Creer 24 mai 2019 a 9:22
+Entrer: Clavier
+Sortie: Moniteur
+
+Code central permettant l'appel de code qui font les calculs et autres commandes
+"""
+import sys
+import numpy as np
+import os.path
+
+save_path = 'C:/Users/Laurier/Desktop/EMCR/02- Data/01-Fichier format dat/' #localisation des datas brutes easy et hard axis
+fpath = 'C:/Users/Laurier/Desktop/EMCR/02- Data/03-Data_' #localisation d'ou seront sauvegarder les fichiers
+
+#from C:\Users\Laurier\Desktop\EMCR\03- Codes\01-Analyse_donnees/_Fonctions_v2 import getColumns  #loc. code fichierv2 et plottool
+
+cryst = 'HoMn2O5' #{'HoMn2O5', 'TbMn2O5', 'TmMnO3', 'YbMn2O5, 'YbMnO3'}
+crystT = r'TmMnO$_{3}$' # r'TmMnO$_{3}$' r'HoMn$_{2}$O$_{5}$'
+date =  130000 #(AAMMJJ) 190705 190906
+echantillon = 'A' #Lettre ou numeros...
+mm = 8.32 #{27.7, 8.32, 15.7, 1.5, 10} masse en mg
+
+masse = float(mm)*(10**-3) #masse en g
+print('La masse est de', masse ,'g')
+
+prefix = '_'+ str(echantillon)+'_MCE_'+ str(mm) +'mg_Holder'
+name = str(cryst) + prefix + '_axe'  #nom du doc sans le .txt ni l'angle
+
+commande = input('Que voulez-vous faire ( s = delta s; dsa = dS vs Angle; delS = la derive de delta S ; r= rien )?:')
+                   
+if (commande == 's' ) : #Code pour calculer dS vs T. Beosin des documents avec les angles pour faire les calculs (au moins 2)
+        from Calcul_dS import trace_deltaSvsT
+        chx = input('Voulez-vous etudiez un seul angle (s) ou plusieurs (p) ?:')
+        nbch = int(input('Combien de champ mag voulez-vous etudier?:'))
+        hmin = int(input('Quel est le champ mag minimum a etudier?:'))
+        #print(hmin+nbch)
+        if chx == 's':
+            axe = int(input('Quel est l.angle de rotation?:'))
+            trace_deltaSvsT(masse, axe, name, hmin, hmin+nbch, chx, cryst, echantillon, fpath, date,crystT)
+        if chx == 'p':
+            anmin = int(input("L'angle minimale que vous voulez etudier:"))
+            anmax = int(input("L'angle maximale que vous voulez etudier:"))
+            pas = int(input('Quel est le pas entre deux angles?:'))
+            for ang in range(anmin, anmax+1, pas):
+                #plt.figure()
+                trace_deltaSvsT(masse, ang, name, hmin, hmin+nbch, chx, cryst, echantillon, fpath, date,crystT)
+        print('Calculs terminés')
+
+if (commande == 'dsa' ): #code pour faire ds vs angle pour différentes températures et un champ fixe
+        from VariationEntropie_Angle import trace_dsVSang
+        ch = int(input('Quel est le champ mag d.etude?:'))
+        anmin = int(input('L.angle minimale que vous voulez etudier:'))
+        anmax = int(input('L.angle maximale que vous voulez etudier:'))
+        nb = int(input('Quel est le pas entre deux angles?:'))
+        N1 = str(name) + str(anmin) + '_ds_champ_'+ str(ch)+'.txt'
+        file = open(os.path.join(fpath + str(cryst) +'/' + str(echantillon)+ '/' + str(date), N1), 'r')
+        var =np.loadtxt(os.path.join(fpath + str(cryst) +'/' + str(echantillon)+ '/' + str(date),N1) ,delimiter = ',', skiprows= 1)
+        file.close()
+        tempabay = var[:,1].tolist()
+        print(tempabay)
+        i=0
+        for temp in tempabay:
+            print('La temperature est ',temp)
+            trace_dsVSang(masse ,anmin, anmax, nb, temp, name, cryst, ch, echantillon, fpath, date,i,crystT)
+            i+=1
+if (commande == 'dsar' ): #code pour faire ds vs angle pour différentes températures et un champ fixe
+        from VariationEntropie_Angle_dsr import trace_dsVSang
+        ch = int(input('Quel est le champ mag d.etude?:'))
+        anmin = int(input('L.angle minimale que vous voulez etudier:'))
+        anmax = int(input('L.angle maximale que vous voulez etudier:'))
+        nb = int(input('Quel est le pas entre deux angles?:'))
+        N1 = str(name) + str(anmin) + '_ds_champ_'+ str(ch)+'.txt'
+        file = open(os.path.join(fpath + str(cryst) +'/' + str(echantillon)+ '/' + str(date), N1), 'r')
+        var =np.loadtxt(os.path.join(fpath + str(cryst) +'/' + str(echantillon)+ '/' + str(date),N1) ,delimiter = ',', skiprows= 1)
+        file.close()
+        tempabay = var[:,1].tolist()
+        print(tempabay)
+        i=0
+        for temp in tempabay:
+            print('La temperature est ',temp)
+            trace_dsVSang(masse ,anmin, anmax, nb, temp, name, cryst, ch, echantillon, fpath, date,i,crystT)
+            i+=1
+
+if (commande == 'delS' ): #code pour faire la derive de delta S
+    from Calcul_DeriveEntropie_Angle_v2 import trace_ddeltaSvsAng
+    anglel = int(input('Quel est l.angle min:'))
+    chp = str(input('Quel est le champ mag a etudier?:'))
+    trace_ddeltaSvsAng(anglel, name, cryst, chp, echantillon, fpath, date)
+if (commande == 'delS2' ): #code pour faire la derive de delta S
+    from VariationDeriveEntropie_Angle import trace_ddeltaSvsAng
+    anglel = int(input('Quel est l.angle min:'))
+    chp = str(input('Quel est le champ mag a etudier?:'))
+    trace_ddeltaSvsAng(anglel, name, cryst, chp, echantillon, fpath, date,crystT)
+     
+if (commande == 'R' or commande == 'r'):
+        sys.exit()
