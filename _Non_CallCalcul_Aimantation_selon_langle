@@ -1,0 +1,93 @@
+# -*- coding: utf-8 -*-
+"""
+Auteur: Olivier Bernard
+Créée mardi le 7juillet  à (11:45) 
+Entrer: Clavier
+Sortie: Moniteur
+
+Code permettant une tentative de déterminer l'évolution de la valeur absolue de 
+l'aimantation selon l'angle de rotation (référence avec l'axe facile (Easy) = 0deg). Le code
+requiert d'avoir le fichier de l'axe hard ainsi que celui de l'axe easy pour pouvoir
+en extraire les données ainsi que de calculer la valeur de M pour un angle donné.
+
+Les fichiers sont ceux du SQUID sans l'en tëte (on conserve le titre des colonnes).
+"""
+import numpy as np
+from matplotlib import pyplot as plt
+import math
+import os.path
+from scipy.interpolate import interp1d
+
+
+#----------------------------------------------------------------------------
+from _Fonctions_v2 import getColumns
+
+#Calcul val abs------
+def magnetisation(chixx,chiyy,theta,H):
+    if H == 0:
+        return 0
+    else:
+        M = math.sqrt(chixx**2 *(math.sin(theta))**2 + chiyy**2 *(math.cos(theta))**2) *H *masse
+        return M
+
+#Ouvertures des fichiers et autres
+
+fpath = 'C:/Users/Laurier/Desktop/EMCR/02- Data/03-Data_'
+
+cryst = 'TmMnO3' #{'HoMn2O5', 'TbMn2O5', 'TmMnO3', 'YbMn2O5, 'YbMnO3'}
+date =  190906 #(AAMMJJ) 190705 190906
+echantillon = 'A' #Lettre ou numeros...
+mm = 10 #{27.7, 8.32, 15.7, 1.5, 10} masse en mg
+
+angmin = 0 #Angle minimal a etudier
+angmax=360 #Angle maximal
+pas = 1 #Pas entre les angles
+
+masse = float(mm)*(10**-3) #masse en g
+print('La masse est de', masse ,'g')
+
+prefix = '_'+ str(echantillon)+'_MCE_'+ str(mm) +'mg_Holder'
+name = 'Susceptibilite_'+str(cryst) + prefix + '_axe'  #nom du doc sans le .txt ni l'angle
+namew = str(cryst) + prefix + '_axe' 
+chp= np.concatenate((np.arange(0,1,0.1),np.arange(1,3,0.2),np.arange(3,7.5,0.5)),axis= None) #Champ magnetique mesurer
+champmag = [round(num, 2) for num in chp]
+tmp= np.concatenate((np.arange(2,17,1),np.arange(18,27,2),np.arange(30,83,4)),axis= None) #Champ magnetique mesurer
+temperature = [round(num, 1) for num in tmp]
+print(temperature)
+
+axis = [0,90] #Angles mesurer donc a ne pas recalculer
+#mesurer = [0,90] #Angles mesurer donc a ne pas recalculer
+Angle = np.arange(angmin, angmax+pas, pas) #Creation liste des angle
+AngSepar= set(Angle) - set(axis) #Retrait des angle mesurer
+NbAngle=list(AngSepar) #Lsite finale utilisee
+#print(NbAngle)
+
+for ang in NbAngle:
+    #print('Angle: '+str(ang))
+    fd=open(os.path.join(fpath +str(cryst)+'/'+ str(echantillon) + '/' +str(date), namew+ str(ang)+'.txt'), "w")
+    fd.write('Time'+','+'Comment'+','+'Field (Oe)'+','+'Temperature (K)'+','+'Long Moment (emu)'+','+'Long Scan Std Dev'+','+'Long Offset (cm)'+','+'Long Offset Std Dev'+','+'Long Algorithm'+','+'Long Reg Fit'+','+'Long Reg Factor'+','+'Trans Moment (emu)'+','+'Trans Scan Std Dev'+','+'Trans Offset (cm)'+','+'Trans Offset Std Dev'+','+'Trans Algorithm'+','+'Trans Reg Fit'+','+'Trans Reg Factor'+','+'Long Moment [w/o ABS] (emu)'+','+'Long Scan Std Dev [w/o ABS]'+','+'Long Offset [w/o ABS] (cm)'+','+'Long Offset Std Dev [w/o ABS]'+','+'Long Reg Fit [w/o ABS]'+','+'Trans Moment [w/o ABS] (emu)'+','+'Trans Scan Std Dev [w/o ABS]'+','+'Trans Offset [w/o ABS] (cm)'+','+'Trans Offset Std Dev [w/o ABS]'+','+'Trans Reg Fit [w/o ABS]'+','+'RSO Position (deg)'+','+'Amplitude (cm)'+','+'Frequency'+','+'Cycles to Average'+','+'Scans per Measurement'+','+'Delta Temp (K)'+','+'Error'+','+'EC Comp. Running'+','+'Using ABS'+','+"\n")
+    print('Angle', ang)
+    for temp in temperature:
+        Magnet = []
+        i=0
+        for champ in champmag:
+            #print('Angle '+ str(ang)+'deg a '+str(temp)+'K, pour un champ '+ str(champ))
+            T = [[] for v in range(len(axis))]  
+            chi = [[] for v in range(len(axis))] 
+            j=0
+            for axes in axis:
+                file = open(os.path.join(fpath+ str(cryst) +'/' + str(echantillon)+ '/' + str(date)+'/'+'03-Susceptibilite', name+ str(axes)+'_'+str(champ)+'T.txt'), 'r')
+                cols, indexToName = getColumns(file)
+                file.close()
+                T[j] = list(np.float_(cols['Temperature (K)']))
+                chi[j] = list(np.float_(cols['Susceptibility']))
+                j+=1
+            fyy = interp1d(T[0], chi[0], 'cubic', fill_value='extrapolate')
+            fxx = interp1d(T[1], chi[1], 'cubic', fill_value='extrapolate')
+            chix = fxx(float(temp))
+            chiy = fyy(float(temp))
+            Mm = magnetisation(chix, chiy, np.deg2rad(ang), champ)
+            Magnet.append(Mm)
+            fd.write('0'+','+''+','+str(champ*10000)+','+str(temp)+','+str(Magnet[i])+'\n')
+            i+=1
+    fd.close() 
