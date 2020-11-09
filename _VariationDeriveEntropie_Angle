@@ -10,10 +10,12 @@ Code permettant le lecture de document ds vs l'angle et d'en calculer les dériv
 import numpy as np
 from matplotlib import pyplot as plt
 import os.path
+import seaborn as sns
 
-def trace_ddeltaSvsAng(angle_min, doc, cryst, champ , ech, fpath, date):
+def trace_ddeltaSvsAng(angle_min, doc, cryst, champ , ech, fpath, date,crystt):
    # fpath = 'C:/Users/Laurier/Desktop/EMCR/02- Data/03-Data_' 
     #fpath = 'C:/Users/Laurier/Desktop/EMCR/02- Data'
+   
     
     def deriv(x1, x2, y1, y2):
         dx = x2 - x1
@@ -24,10 +26,15 @@ def trace_ddeltaSvsAng(angle_min, doc, cryst, champ , ech, fpath, date):
     file = open(os.path.join(fpath+str(cryst)+ '/' + str(ech) + '/' + str(date), nom_doc), 'r')
     var =np.loadtxt(os.path.join(fpath+str(cryst)+ '/' + str(ech) + '/' + str(date),nom_doc) ,delimiter=',', skiprows= 1)
     file.close()
-
+    
+    NUM_COLORS = len(var[:,1])
+    LINE_STYLES = ['solid', 'dashed', 'dashdot', 'dotted']
+    NUM_STYLES = len(LINE_STYLES)
+    clrs = sns.color_palette('husl', n_colors=NUM_COLORS)
+    jj=0
     for tempi in var[:,1].tolist():
-        fd=open(os.path.join(fpath+str(cryst)+ '/' + str(ech) + '/' + str(date), doc +'(DdSvsA)'+ str(tempi) +'K'+ str(champ)+ 'T'+'.txt'), "w")
-        fd.write(str('Ddelta s') + ','+ str('angle') + ',' + 'Temperature (K)' +','+ str('Champ (H)')+ ','+ "\n")
+        fd=open(os.path.join(fpath+str(cryst)+ '/' + str(ech) + '/' + str(date)+'/04-dds', '_'+doc +'(ddSvsA)'+ str(tempi) +'K'+ str(champ)+ 'T'+'.txt'), "w")
+        fd.write(str(r' d Delta S ') + ','+ str('angle') + ',' + 'Temperature (K)' +','+ 'Champ (H)'+ "\n")
         
         nom_d = doc +'(dSvsA)'+ str(tempi) +'K'+ str(champ)+ 'T'+'.txt'
         file2 = open(os.path.join(fpath+str(cryst)+ '/' + str(ech) + '/' + str(date), nom_d) , 'r')
@@ -49,15 +56,22 @@ def trace_ddeltaSvsAng(angle_min, doc, cryst, champ , ech, fpath, date):
             fd.write(str(lo) + ',' + str(moy_angle) +','+ str(tempi)+','+ str(champ) +  "\n")
             i+=1  
         file.close()
+        font = 21
+        font2 = 15.5
         #plt.figure()
-        plt.axvline(x=80, linewidth= 0.5, color='grey')
-        plt.axvline(x=100, linewidth= 0.5, color='grey')
+        #plt.axvline(x=80, linewidth= 0.5, color='grey')
+        #plt.axvline(x=100, linewidth= 0.5, color='grey')
         plt.axvline(x=90, linewidth= 0.5, color='grey')
-        plt.axvline(x=50, linewidth= 0.5, color='grey')
-        plt.axvline(x=130, linewidth= 0.5, color='grey')
+        #plt.axvline(x=50, linewidth= 0.5, color='grey')
+        #plt.axvline(x=130, linewidth= 0.5, color='grey')
         plt.axhline(y=0, linewidth= 0.5, color='grey')
-        plt.legend( loc='best',  frameon = True)
-        plt.plot(xx[:], yy[:], label = str(tempi)+'K')
-        plt.xlabel(r'Angle $\theta$') # axe x angle
-        plt.ylabel(r'$-\frac{\partial \Delta S}{\partial \theta}$') #axe y delta s
-        plt.title(r'Variation de $\Delta$s en fonction de $\theta$ du '+str(cryst)+' a '+str(champ)+'T et '+ str(tempi) +'K')
+        plt.legend( loc='best', ncol=3, frameon = True,fontsize = font2-2)
+        plt.tick_params(axis='both', which='major', labelsize=font)
+        graph = plt.plot(xx[:], yy[:], label = str(tempi)+'K')
+        graph[0].set_color(clrs[jj])
+        graph[0].set_linestyle(LINE_STYLES[jj%NUM_STYLES])
+        plt.xlim(0, 180)  
+        plt.xlabel(r'Angle ($\theta^{\circ}$)',fontsize=font) # axe x angle
+        plt.ylabel(r'$-\frac{\partial \Delta S_{M}}{\partial \theta}$',fontsize=font) #axe y delta s
+        #plt.title(r'Variation de $-\partial \Delta S/\partial \theta$ en fonction de $\theta$ du '+str(crystt)+' échantillon ' +ech+' sous un champ magnétique de '+str(champ)+'T pour une température variant de 2.5K à '+ str(tempi) +'K',fontsize = font,wrap=True)
+        jj+=1
