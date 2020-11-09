@@ -1,0 +1,66 @@
+# -*- coding: utf-8 -*-
+"""
+Auteur: Olivier Bernard
+Créée mercredi le 05 juillet 2019  à (10:30) 
+Entrer: Clavier
+Sortie: Moniteur
+
+Code qui trace le M vs T de different echantillons
+"""
+import numpy as np
+from matplotlib import pyplot as plt
+from _Fonctions_v2 import getColumns
+import os.path
+import seaborn as sns
+
+fpath = 'C:/Users/Laurier/Desktop/EMCR/02- Data/03-Data_' #localisation d'ou seront sauvegarder les fichiers
+
+
+crystal = 'TmMnO3' # 'HoMn2O5' 'TmMnO3'
+crystt = r'TmMnO$_{3}$' #r'HoMn$_{2}$O$_{5}$ r'TmMnO$_{3}$'
+ech = 'A' #'A' 'C'
+date = '190724' # 190705 190724
+mm = 10 #1.7 10
+ang=0
+
+t_d= str(crystal) + '_' + str(ech) +'_'+'MvsT_' + str(mm) +'mg_Holder_axe'+ str(ang)
+e = 3*len(t_d)
+print(e)
+x = [[] for i in range(e)]
+
+masse= float(mm) * 10**-3
+
+j = 0
+print(len(t_d))
+
+Nom = t_d + '.txt'
+file = open(os.path.join(fpath + str(crystal) +'/' + str(ech)+ '/' + str(date), Nom), 'r')
+cols, indexToName = getColumns(file)
+file.close()
+x[j*3] = list(np.float_(cols['Temperature (K)'])) #x0, x3, x6 ... temp
+x[1 + j*3] = list(np.float_(cols['Long Moment (emu)'])/masse) #x1, x4, x7 ... Moment
+x[2 + 3*j]= list(np.float_(cols['Field (Oe)'])/10000) #x2, x5, x8... champ
+j+= 1
+print(j)
+font = 10
+font2 = 10
+figure = plt.figure()
+axes = figure.add_axes([0.08,0.08,0.85,0.85])
+axes2 = figure.add_axes([0.5,0.5,0.3,0.3])
+
+axes.plot(x[0][:],x[1][:], 's', linestyle = 'dashed', linewidth = 1 ,markersize = 1)
+axes2.plot(x[0][:],x[1][:], 's', linestyle = 'dashed', linewidth = 1 ,markersize = 1)
+axes2.set_xlim(1.8,12)    
+axes2.set_ylim(0.88,0.92)    
+#axes2.set_xticks([6.99,7.00])  
+#axes2.set_yticks([15.98,16.04])
+axes.set_title('Aimantation selon la température du '+ str(crystt) + ' échantillon ' + str(ech) + " pour un champ magnétique de 0.05T selon l'axe facile", fontsize = font-3.5, wrap=True)
+axes.set_ylabel('Aimantation (Am$^2$ /kg)',fontsize=font)
+axes.set_xlabel(r'Temperature (K)',fontsize=font)
+axes.tick_params(axis='both', which='major', labelsize=font)
+axes2.tick_params(axis='both', which='major', labelsize=font2)
+
+#ax_zoom = zoom_axes(fig,ax,[1.5,12] ,[0.89,0.91556],[75,175] ,[0.5,0.8])
+#ax_zoom.plot(x[0][:],x[1][:], 's', linestyle = 'dashed', linewidth = 1 ,markersize = 1)
+
+#plt.text(50,1.5,'Presence d.air dans le porte echantillon (le comportement chaotique cesse autour de 50K)')
